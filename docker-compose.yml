@@ -1,0 +1,14 @@
+services:
+  olr:
+    build: .
+    ports:
+      - "19528:19528"
+    volumes:
+      - olr_data:/data
+    environment:
+      - OLR_LISTEN_ADDRESS=0.0.0.0
+      - OLR_LOG_LEVEL=info
+    restart: unless-stopped
+
+volumes:
+  olr_data:

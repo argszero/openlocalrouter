@@ -1,0 +1,29 @@
+[package]
+name = "openlocalrouter"
+version = "0.1.0"
+edition = "2021"
+description = "OpenLocalRouter — 协议无关的本地 AI API 路由网关 (桌面版)"
+license = "MIT"
+repository = "https://github.com/farion1231/openlocalrouter"
+rust-version = "1.86.0"
+
+[lib]
+name = "openlocalrouter_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+openlocalrouter-core = { path = ".." }
+log = "0.4"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "s"
+panic = "unwind"
+strip = "symbols"

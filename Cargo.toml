@@ -1,0 +1,96 @@
+[package]
+name = "openlocalrouter-core"
+version = "0.1.0"
+edition = "2021"
+description = "协议无关的本地 AI API 路由网关"
+license = "MIT"
+repository = "https://github.com/farion1231/openlocalrouter"
+rust-version = "1.86.0"
+
+[lib]
+name = "openlocalrouter_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "openlocalrouter"
+path = "src/main.rs"
+
+[workspace]
+members = ["src-tauri"]
+
+[dependencies]
+# HTTP 服务器
+axum = "0.7"
+async-trait = "0.1"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "fs"] }
+hyper = { version = "1.0", features = ["full"] }
+hyper-util = { version = "0.1", features = ["tokio", "http1", "client-legacy"] }
+hyper-rustls = { version = "0.27", features = ["http1", "tls12", "ring", "webpki-tokio"] }
+http = "1"
+http-body = "1"
+http-body-util = "0.1"
+httparse = "1"
+tokio-rustls = "0.26"
+rustls = "0.23"
+webpki-roots = "0.26"
+rustls-native-certs = "0.8"
+
+# 异步运行时
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "sync", "signal"] }
+futures = "0.3"
+bytes = "1.5"
+async-stream = "0.3"
+
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["rustls-tls", "json", "stream", "socks"] }
+
+# 序列化
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_yaml = "0.9"
+
+# 数据库
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# 工具
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.11", features = ["v4"] }
+url = "2.5"
+regex = "1.10"
+log = "0.4"
+env_logger = "0.11"
+thiserror = "2.0"
+anyhow = "1.0"
+once_cell = "1.21.3"
+base64 = "0.22"
+dirs = "5.0"
+tempfile = "3"
+clap = { version = "4", features = ["derive"] }
+zstd = "0.13"
+flate2 = "1"
+argon2 = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+
+# Tauri（桌面打包，可选）
+# tauri = { version = "2", features = ["tray-icon"], optional = true }
+# tauri-plugin-log = { version = "2", optional = true }
+# tauri-plugin-dialog = { version = "2", optional = true }
+# tauri-plugin-store = { version = "2", optional = true }
+# tauri-plugin-opener = { version = "2", optional = true }
+
+[features]
+default = []
+# desktop = ["tauri", "tauri-plugin-log", "tauri-plugin-dialog", "tauri-plugin-store", "tauri-plugin-opener"]
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "s"
+panic = "unwind"
+strip = "symbols"
+
+[dev-dependencies]
+serial_test = "3"
