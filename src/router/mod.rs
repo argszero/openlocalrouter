@@ -7,8 +7,8 @@ pub(crate) mod handler;
 pub(crate) mod sse;
 pub(crate) mod streaming;
 pub(crate) mod transform;
-pub(crate) mod usage;
 mod types;
+pub(crate) mod usage;
 
 use crate::db::Database;
 use axum::{

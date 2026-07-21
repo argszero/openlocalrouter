@@ -9,7 +9,7 @@
 //! 支持：SSE 流式透传 + OpenAI ↔ Anthropic 协议转换
 
 use super::types::ProxyState;
-use super::usage::{UsageContext, TokenUsage};
+use super::usage::{TokenUsage, UsageContext};
 use crate::db::dao::UsageRecordRow;
 use crate::db::Database;
 use axum::{
@@ -514,9 +514,7 @@ async fn proxy_request(
                 let status = resp.status();
                 // 5xx 服务端错误可重试，4xx 客户端错误不重试
                 if status.is_server_error() && attempt < MAX_RETRIES {
-                    log::warn!(
-                        "上游返回 5xx: {status} (target: {upstream_url}), 将重试"
-                    );
+                    log::warn!("上游返回 5xx: {status} (target: {upstream_url}), 将重试");
                     last_error = Some(format!("上游返回 {status}"));
                     continue;
                 }
@@ -560,14 +558,16 @@ async fn proxy_request(
                     usage_ctx,
                     &state.db,
                 )
-                    .await
+                .await
             } else {
                 handle_passthrough_response(resp, status, usage_ctx, &state.db).await
             }
         }
         None => {
             let err_msg = last_error.unwrap_or_else(|| "未知错误".into());
-            log::error!("上游请求失败（已重试 {MAX_RETRIES} 次）: {err_msg} (target: {upstream_url})");
+            log::error!(
+                "上游请求失败（已重试 {MAX_RETRIES} 次）: {err_msg} (target: {upstream_url})"
+            );
             (
                 StatusCode::BAD_GATEWAY,
                 Json(
@@ -632,12 +632,8 @@ async fn handle_streaming_response(
             ("anthropic_messages", "openai_chat") => {
                 // OpenAI SSE → Anthropic SSE
                 let transformed = super::streaming::openai_sse_to_anthropic(byte_stream);
-                let recording = UsageRecordingStream::new(
-                    transformed,
-                    forwarding_protocol,
-                    usage_ctx,
-                    db,
-                );
+                let recording =
+                    UsageRecordingStream::new(transformed, forwarding_protocol, usage_ctx, db);
                 let body = Body::from_stream(recording);
                 let mut response = axum::response::Response::builder().status(StatusCode::OK);
                 response = response.header("content-type", "text/event-stream");
@@ -654,12 +650,8 @@ async fn handle_streaming_response(
             ("openai_responses", "openai_chat") => {
                 // OpenAI Chat SSE → Responses SSE
                 let transformed = super::streaming::openai_sse_to_openai_responses(byte_stream);
-                let recording = UsageRecordingStream::new(
-                    transformed,
-                    forwarding_protocol,
-                    usage_ctx,
-                    db,
-                );
+                let recording =
+                    UsageRecordingStream::new(transformed, forwarding_protocol, usage_ctx, db);
                 let body = Body::from_stream(recording);
                 let mut response = axum::response::Response::builder().status(StatusCode::OK);
                 response = response.header("content-type", "text/event-stream");
@@ -816,10 +808,12 @@ async fn handle_passthrough_response(
         }
         Err(e) => {
             log::error!("读取上游响应体失败: {e}");
-            (StatusCode::BAD_GATEWAY,
-            Json(serde_json::json!({"error": {"message": format!("读取上游响应失败: {e}")}})),
-        ).into_response()
-        },
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(serde_json::json!({"error": {"message": format!("读取上游响应失败: {e}")}})),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -925,9 +919,7 @@ impl UsageRecordingStream {
         if self.protocol == "anthropic_messages" {
             if let Some(data) = line.strip_prefix("data: ") {
                 if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                    if let Some(u) =
-                        super::usage::extract_usage_from_anthropic_sse(&v)
-                    {
+                    if let Some(u) = super::usage::extract_usage_from_anthropic_sse(&v) {
                         if !u.is_zero() {
                             self.usage = Some(u);
                         }

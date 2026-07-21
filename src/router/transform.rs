@@ -530,7 +530,9 @@ pub fn openai_chat_to_openai_responses(body: &Value) -> Value {
                 match part_type {
                     "text" | "output_text" => {
                         if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
-                            content_parts.push(json!({"type": "output_text", "text": text, "annotations": []}));
+                            content_parts.push(
+                                json!({"type": "output_text", "text": text, "annotations": []}),
+                            );
                         }
                     }
                     _ => {}

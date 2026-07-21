@@ -545,8 +545,7 @@ where
 
             if let Some(data) = line.strip_prefix("data: ") {
                 if data == "[DONE]" {
-                    events
-                        .push_str("event: response.completed\ndata: {}\n\n");
+                    events.push_str("event: response.completed\ndata: {}\n\n");
                     continue;
                 }
 
@@ -581,16 +580,12 @@ where
                     };
 
                     let delta = first.get("delta");
-                    let finish_reason = first
-                        .get("finish_reason")
-                        .and_then(|f| f.as_str());
+                    let finish_reason = first.get("finish_reason").and_then(|f| f.as_str());
 
                     let delta_role = delta.and_then(|d| d.get("role")).and_then(|r| r.as_str());
 
                     // Emit initial events on first content-bearing chunk
-                    if !state.initialized
-                        && delta_role != Some("assistant")
-                    {
+                    if !state.initialized && delta_role != Some("assistant") {
                         state.initialized = true;
 
                         events.push_str(&format!(
@@ -683,10 +678,7 @@ where
                         }
 
                         for tc in tool_calls {
-                            let tc_id = tc
-                                .get("id")
-                                .and_then(|i| i.as_str())
-                                .unwrap_or("");
+                            let tc_id = tc.get("id").and_then(|i| i.as_str()).unwrap_or("");
                             let tc_name = tc
                                 .get("function")
                                 .and_then(|f| f.get("name"))

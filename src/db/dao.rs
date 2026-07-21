@@ -71,9 +71,9 @@ pub struct SessionRow {
 pub struct EndpointApiKeyRow {
     pub id: String,
     pub endpoint_id: String,
-    pub user_id: String,        // deprecated, kept for compat
-    pub created_by: String,     // who owns this key
-    pub assigned_to: String,    // who can use this key
+    pub user_id: String,     // deprecated, kept for compat
+    pub created_by: String,  // who owns this key
+    pub assigned_to: String, // who can use this key
     pub name: String,
     pub key_value: String,
     pub key_hash: String,
@@ -347,9 +347,9 @@ impl Database {
             let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(endpoint_id)];
             let mut sql = "SELECT id, endpoint_id, user_id, created_by, assigned_to, name, key_value, key_hash, key_prefix, enabled, created_at, last_used_at
                            FROM endpoint_api_keys WHERE endpoint_id = ?1".to_string();
-            if user_id_filter.is_some() {
+            if let Some(ref filter) = user_id_filter {
                 sql.push_str(" AND (created_by = ?2 OR assigned_to = ?2)");
-                params.push(Box::new(user_id_filter.unwrap()));
+                params.push(Box::new(filter.clone()));
             }
             sql.push_str(" ORDER BY created_at");
 
@@ -962,7 +962,10 @@ impl Database {
                 params.push(Box::new(v.clone()));
             }
             if let Some(ref v) = to {
-                conditions.push(format!("u.created_at < date(?{}, '+1 day')", params.len() + 1));
+                conditions.push(format!(
+                    "u.created_at < date(?{}, '+1 day')",
+                    params.len() + 1
+                ));
                 params.push(Box::new(v.clone()));
             }
 
@@ -972,9 +975,7 @@ impl Database {
                 format!("WHERE {}", conditions.join(" AND "))
             };
 
-            let count_sql = format!(
-                "SELECT COUNT(*) FROM usage_records u {where_clause}"
-            );
+            let count_sql = format!("SELECT COUNT(*) FROM usage_records u {where_clause}");
             let params_refs: Vec<&dyn rusqlite::types::ToSql> =
                 params.iter().map(|p| p.as_ref()).collect();
             let total: i64 = conn.query_row(&count_sql, params_refs.as_slice(), |r| r.get(0))?;
@@ -1062,7 +1063,10 @@ impl Database {
                 params.push(Box::new(v.clone()));
             }
             if let Some(ref v) = to {
-                conditions.push(format!("created_at < date(?{}, '+1 day')", params.len() + 1));
+                conditions.push(format!(
+                    "created_at < date(?{}, '+1 day')",
+                    params.len() + 1
+                ));
                 params.push(Box::new(v.clone()));
             }
 
@@ -1207,7 +1211,10 @@ impl Database {
                 params.push(Box::new(v.clone()));
             }
             if let Some(ref v) = to {
-                conditions.push(format!("u.created_at < date(?{}, '+1 day')", params.len() + 1));
+                conditions.push(format!(
+                    "u.created_at < date(?{}, '+1 day')",
+                    params.len() + 1
+                ));
                 params.push(Box::new(v.clone()));
             }
 
@@ -1244,10 +1251,26 @@ impl Database {
             let rows = stmt.query_map(params_refs.as_slice(), |row| {
                 Ok(UsageAggregateRow {
                     key: row.get(0)?,
-                    key_name: if is_key_group { row.get::<_, String>(1).ok() } else { None },
-                    total_input_tokens: if is_key_group { row.get(2)? } else { row.get(1)? },
-                    total_output_tokens: if is_key_group { row.get(3)? } else { row.get(2)? },
-                    count: if is_key_group { row.get(4)? } else { row.get(3)? },
+                    key_name: if is_key_group {
+                        row.get::<_, String>(1).ok()
+                    } else {
+                        None
+                    },
+                    total_input_tokens: if is_key_group {
+                        row.get(2)?
+                    } else {
+                        row.get(1)?
+                    },
+                    total_output_tokens: if is_key_group {
+                        row.get(3)?
+                    } else {
+                        row.get(2)?
+                    },
+                    count: if is_key_group {
+                        row.get(4)?
+                    } else {
+                        row.get(3)?
+                    },
                 })
             })?;
 
@@ -1265,8 +1288,12 @@ impl Database {
         to: Option<&str>,
     ) -> Result<SharedUsageSummary, AppError> {
         let key_owner_id = key_owner_id.to_string();
-        let from = from.map(|s| s.to_string()).unwrap_or_else(|| String::from("2000-01-01"));
-        let to = to.map(|s| s.to_string()).unwrap_or_else(|| String::from("2099-12-31"));
+        let from = from
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| String::from("2000-01-01"));
+        let to = to
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| String::from("2099-12-31"));
 
         self.with_conn(move |conn| {
             // Today tokens
@@ -1276,7 +1303,8 @@ impl Database {
                  WHERE key_owner_id = ?1 AND user_id != key_owner_id
                    AND date(created_at) >= date(?2)
                    AND date(created_at) <= date(?3)",
-                [&key_owner_id, &from, &to], |r| r.get(0),
+                [&key_owner_id, &from, &to],
+                |r| r.get(0),
             )?;
 
             // Previous period tokens (same duration)
@@ -1286,14 +1314,21 @@ impl Database {
                  WHERE key_owner_id = ?1 AND user_id != key_owner_id
                    AND date(created_at) >= date(?2, ?3)
                    AND date(created_at) < date(?2)",
-                rusqlite::params![&key_owner_id, &from,
-                   &format!("-{} days", days_between(&from, &to))],
+                rusqlite::params![
+                    &key_owner_id,
+                    &from,
+                    &format!("-{} days", days_between(&from, &to))
+                ],
                 |r| r.get(0),
             )?;
 
             let trend_pct = if prev_tokens > 0 {
                 (today - prev_tokens) as f64 / prev_tokens as f64 * 100.0
-            } else if today > 0 { 100.0 } else { 0.0 };
+            } else if today > 0 {
+                100.0
+            } else {
+                0.0
+            };
 
             // Active keys in period
             let active_keys: i64 = conn.query_row(
@@ -1302,13 +1337,15 @@ impl Database {
                  WHERE key_owner_id = ?1 AND user_id != key_owner_id
                    AND date(created_at) >= date(?2)
                    AND date(created_at) <= date(?3)",
-                [&key_owner_id, &from, &to], |r| r.get(0),
+                [&key_owner_id, &from, &to],
+                |r| r.get(0),
             )?;
 
             // Total keys
             let total_keys: i64 = conn.query_row(
                 "SELECT COUNT(*) FROM endpoint_api_keys WHERE created_by = ?1",
-                [&key_owner_id], |r| r.get(0),
+                [&key_owner_id],
+                |r| r.get(0),
             )?;
 
             // Active users in period
@@ -1318,7 +1355,8 @@ impl Database {
                  WHERE key_owner_id = ?1 AND user_id != key_owner_id
                    AND date(created_at) >= date(?2)
                    AND date(created_at) <= date(?3)",
-                [&key_owner_id, &from, &to], |r| r.get(0),
+                [&key_owner_id, &from, &to],
+                |r| r.get(0),
             )?;
 
             Ok(SharedUsageSummary {

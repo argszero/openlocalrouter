@@ -86,10 +86,7 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
 /// 注意：SSE chunk 可能不是纯 JSON，需要先处理 `data: ` 前缀
 pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
     chunk.get("usage").map(|u| {
-        let prompt = u
-            .get("prompt_tokens")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0);
+        let prompt = u.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
         let completion = u
             .get("completion_tokens")
             .and_then(|v| v.as_u64())
