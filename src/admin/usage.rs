@@ -7,7 +7,9 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::admin::auth::AuthContext;
-use crate::db::dao::{SharedUsageSummary, TimeSeriesBreakdown, TimeSeriesPoint, UsageAggregateRow, UsageRecordRow};
+use crate::db::dao::{
+    SharedUsageSummary, TimeSeriesBreakdown, TimeSeriesPoint, UsageAggregateRow, UsageRecordRow,
+};
 use crate::db::Database;
 use crate::error::AppError;
 use std::sync::Arc;
@@ -284,7 +286,10 @@ pub async fn shared_top(
         .await?;
 
     Ok(Json(SummaryResponse {
-        groups: groups.into_iter().take(q.limit.unwrap_or(10) as usize).collect(),
+        groups: groups
+            .into_iter()
+            .take(q.limit.unwrap_or(10) as usize)
+            .collect(),
     }))
 }
 

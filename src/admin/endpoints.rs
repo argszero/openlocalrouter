@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::admin::auth::AuthContext;
 use crate::db::dao::EndpointRow;
@@ -25,13 +25,6 @@ pub struct UpdateEndpointRequest {
     pub path_prefix: Option<String>,
     pub protocol: Option<String>,
     pub enabled: Option<bool>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct EndpointWithKeys {
-    #[serde(flatten)]
-    pub endpoint: EndpointRow,
-    pub api_key_count: i64,
 }
 
 /// GET /api/admin/endpoints

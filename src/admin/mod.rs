@@ -65,13 +65,22 @@ pub async fn serve(
         .route("/api/admin/usage/summary", get(usage::usage_summary))
         .route("/api/admin/usage/my/summary", get(usage::my_usage_summary))
         .route("/api/admin/usage/my/trend", get(usage::my_usage_trend))
-        .route("/api/admin/usage/my/trend-breakdown", get(usage::my_usage_trend_breakdown))
+        .route(
+            "/api/admin/usage/my/trend-breakdown",
+            get(usage::my_usage_trend_breakdown),
+        )
         .route("/api/admin/usage/my/records", get(usage::my_usage_records))
-        .route("/api/admin/usage/shared/summary", get(usage::shared_summary))
+        .route(
+            "/api/admin/usage/shared/summary",
+            get(usage::shared_summary),
+        )
         .route("/api/admin/usage/shared/trend", get(usage::shared_trend))
         .route("/api/admin/usage/shared/top", get(usage::shared_top))
         .route("/api/admin/usage/shared/keys", get(usage::shared_keys))
-        .route("/api/admin/usage/shared/records", get(usage::shared_records))
+        .route(
+            "/api/admin/usage/shared/records",
+            get(usage::shared_records),
+        )
         .route("/api/admin/keys/:id/usage", get(usage::key_usage))
         // Providers
         .route(
@@ -190,9 +199,7 @@ async fn get_presets_handler() -> axum::Json<Vec<presets::ProviderPreset>> {
 }
 
 /// GET /api/admin/server-info — 返回服务器连接信息（无需认证）
-async fn server_info_handler(
-    State(state): State<AdminState>,
-) -> axum::Json<serde_json::Value> {
+async fn server_info_handler(State(state): State<AdminState>) -> axum::Json<serde_json::Value> {
     axum::Json(serde_json::json!({
         "listen_address": state.listen_address,
         "proxy_port": state.serve_port,
