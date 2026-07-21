@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getApiKeys, getEndpoints, createApiKey, updateApiKey, deleteApiKey, getKeyUsage } from '../lib/api'
+import { getApiKeys, getEndpoints, getUsers, createApiKey, updateApiKey, deleteApiKey, getKeyUsage } from '../lib/api'
 import { toast } from 'sonner'
 import { Plus, Trash2, Copy, Check, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -10,10 +10,12 @@ export default function ApiKeysPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const { data: endpoints } = useQuery({ queryKey: ['endpoints'], queryFn: getEndpoints })
+  const { data: users } = useQuery({ queryKey: ['users'], queryFn: getUsers })
   const { data: keys, isLoading } = useQuery({ queryKey: ['apiKeys', id], queryFn: () => getApiKeys(id!), enabled: !!id })
   const endpoint = endpoints?.find(e => e.id === id)
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
+  const [assignedTo, setAssignedTo] = useState('')
   const [newKey, setNewKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [usageMap, setUsageMap] = useState<Record<string, number>>({})
@@ -48,12 +50,14 @@ export default function ApiKeysPage() {
   }
 
   const createMut = useMutation({
-    mutationFn: (name: string) => createApiKey(id!, name),
+    mutationFn: ({ name, assignedTo }: { name: string; assignedTo?: string }) =>
+      createApiKey(id!, name, assignedTo || undefined),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys', id] })
       toast.success('API Key 已创建')
       setNewKey(data.key)
       setName('')
+      setAssignedTo('')
       setShowCreate(false)
     },
     onError: (err: Error) => toast.error(err.message),
@@ -83,6 +87,11 @@ export default function ApiKeysPage() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
     toast.success('已复制到剪贴板')
+  }
+
+  const usernameById = (userId: string) => {
+    const u = users?.find(u => u.id === userId)
+    return u ? u.username : userId
   }
 
   return (
@@ -125,21 +134,34 @@ export default function ApiKeysPage() {
       {/* Create Form */}
       {showCreate && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <input
-              placeholder='Key 名称 (如 "Chat App")'
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              onClick={() => createMut.mutate(name)}
-              disabled={createMut.isPending || !name}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {createMut.isPending ? '生成中…' : '生成'}
-            </button>
-            <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">取消</button>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <input
+                placeholder='Key 名称 (如 "Chat App")'
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <select
+                value={assignedTo}
+                onChange={e => setAssignedTo(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[140px]"
+              >
+                <option value="">分配给自己</option>
+                {users?.filter(u => u.enabled).map(u => (
+                  <option key={u.id} value={u.id}>{u.username}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => createMut.mutate({ name, assignedTo: assignedTo || undefined })}
+                disabled={createMut.isPending || !name}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {createMut.isPending ? '生成中…' : '生成'}
+              </button>
+              <button onClick={() => { setShowCreate(false); setAssignedTo('') }} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">取消</button>
+            </div>
+            <p className="text-xs text-gray-400">选择用户后，该 Key 将分配给对应用户使用。"分配给自己" 即自己使用。</p>
           </div>
         </div>
       )}
@@ -156,6 +178,7 @@ export default function ApiKeysPage() {
               <tr className="border-b border-gray-100">
                 <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">名称</th>
                 <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">Key</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">分配给</th>
                 <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">状态</th>
                 <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">创建时间</th>
                 <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">最后使用</th>
@@ -178,6 +201,11 @@ export default function ApiKeysPage() {
                         {copied ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                     </div>
+                  </td>
+                  <td className="px-5 py-3 text-sm text-gray-500">
+                    {k.assigned_to === k.created_by
+                      ? <span className="text-gray-400">自己</span>
+                      : <span className="text-indigo-600">{usernameById(k.assigned_to)}</span>}
                   </td>
                   <td className="px-5 py-3">
                     <button onClick={() => updateMut.mutate({ keyId: k.id, data: { enabled: !k.enabled } })}>
