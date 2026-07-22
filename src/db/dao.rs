@@ -405,17 +405,44 @@ impl Database {
     pub async fn update_api_key(
         &self,
         id: &str,
-        name: &str,
-        enabled: bool,
+        name: Option<&str>,
+        enabled: Option<bool>,
+        assigned_to: Option<&str>,
     ) -> Result<(), AppError> {
         let id = id.to_string();
-        let name = name.to_string();
-        let enabled = enabled as i32;
+        let name = name.map(|s| s.to_string());
+        let enabled = enabled.map(|b| b as i32);
+        let assigned_to = assigned_to.map(|s| s.to_string());
+
         self.with_conn(move |conn| {
-            conn.execute(
-                "UPDATE endpoint_api_keys SET name=?2, enabled=?3 WHERE id=?1",
-                rusqlite::params![id, name, enabled],
-            )?;
+            let mut sets: Vec<String> = Vec::new();
+            let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+            if let Some(ref n) = name {
+                sets.push(format!("name = ?{}", params.len() + 1));
+                params.push(Box::new(n.clone()));
+            }
+            if let Some(e) = enabled {
+                sets.push(format!("enabled = ?{}", params.len() + 1));
+                params.push(Box::new(e));
+            }
+            if let Some(ref a) = assigned_to {
+                sets.push(format!("assigned_to = ?{}", params.len() + 1));
+                params.push(Box::new(a.clone()));
+            }
+
+            if sets.is_empty() {
+                return Ok(());
+            }
+
+            params.push(Box::new(id.clone()));
+            let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+            let sql = format!(
+                "UPDATE endpoint_api_keys SET {} WHERE id = ?{}",
+                sets.join(", "),
+                params.len()
+            );
+            conn.execute(&sql, param_refs.as_slice())?;
             Ok(())
         })
         .await

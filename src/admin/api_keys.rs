@@ -30,6 +30,7 @@ pub struct CreatedApiKey {
 pub struct UpdateApiKeyRequest {
     pub name: Option<String>,
     pub enabled: Option<bool>,
+    pub assigned_to: Option<String>,
 }
 
 /// GET /api/admin/endpoints/:id/keys
@@ -92,12 +93,13 @@ pub async fn update_api_key(
     Path((_endpoint_id, key_id)): Path<(String, String)>,
     Json(req): Json<UpdateApiKeyRequest>,
 ) -> Result<Json<EndpointApiKeyRow>, AppError> {
-    if let Some(name) = &req.name {
-        db.update_api_key(&key_id, name, req.enabled.unwrap_or(true))
-            .await?;
-    } else if let Some(enabled) = req.enabled {
-        db.update_api_key(&key_id, "", enabled).await?;
-    }
+    db.update_api_key(
+        &key_id,
+        req.name.as_deref(),
+        req.enabled,
+        req.assigned_to.as_deref(),
+    )
+    .await?;
 
     // use direct query since get_api_key_by_value is by key_value
     let keys = db

@@ -96,7 +96,7 @@ export const createApiKey = (endpointId: string, name: string, assigned_to?: str
     method: 'POST',
     body: JSON.stringify({ name, assigned_to }),
   })
-export const updateApiKey = (endpointId: string, keyId: string, data: { name?: string; enabled?: boolean }) =>
+export const updateApiKey = (endpointId: string, keyId: string, data: { name?: string; enabled?: boolean; assigned_to?: string }) =>
   request<ApiKey>(`/endpoints/${endpointId}/keys/${keyId}`, { method: 'PUT', body: JSON.stringify(data) })
 export const deleteApiKey = (endpointId: string, keyId: string) =>
   request(`/endpoints/${endpointId}/keys/${keyId}`, { method: 'DELETE' })
