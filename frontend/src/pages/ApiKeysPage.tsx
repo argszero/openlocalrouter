@@ -64,7 +64,7 @@ export default function ApiKeysPage() {
   })
 
   const updateMut = useMutation({
-    mutationFn: ({ keyId, data }: { keyId: string; data: { name?: string; enabled?: boolean } }) =>
+    mutationFn: ({ keyId, data }: { keyId: string; data: { name?: string; enabled?: boolean; assigned_to?: string } }) =>
       updateApiKey(id!, keyId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys', id] })
@@ -203,9 +203,16 @@ export default function ApiKeysPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-500">
-                    {k.assigned_to === k.created_by
-                      ? <span className="text-gray-400">自己</span>
-                      : <span className="text-indigo-600">{usernameById(k.assigned_to)}</span>}
+                    <select
+                      value={k.assigned_to}
+                      onChange={e => updateMut.mutate({ keyId: k.id, data: { assigned_to: e.target.value } })}
+                      className="px-2 py-1 border border-gray-200 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[140px]"
+                    >
+                      <option value={k.created_by}>{usernameById(k.created_by)}（自己）</option>
+                      {users?.filter(u => u.enabled && u.id !== k.created_by).map(u => (
+                        <option key={u.id} value={u.id}>{u.username}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-5 py-3">
                     <button onClick={() => updateMut.mutate({ keyId: k.id, data: { enabled: !k.enabled } })}>
