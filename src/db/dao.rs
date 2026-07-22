@@ -385,6 +385,27 @@ impl Database {
         .await
     }
 
+    pub async fn get_api_key_by_id(
+        &self,
+        key_id: &str,
+    ) -> Result<Option<EndpointApiKeyRow>, AppError> {
+        let key_id = key_id.to_string();
+        self.with_conn(move |conn| {
+            let mut stmt = conn.prepare(
+                "SELECT id, endpoint_id, user_id, created_by, assigned_to, name, key_value, key_hash, key_prefix, enabled, created_at, last_used_at
+                 FROM endpoint_api_keys WHERE id = ?1",
+            )?;
+            let mut rows = stmt.query_map([&key_id], |row| {
+                key_row_from_row(row)
+            })?;
+            match rows.next() {
+                Some(r) => Ok(Some(r?)),
+                None => Ok(None),
+            }
+        })
+        .await
+    }
+
     /// List keys the current user owns OR has been assigned to
     pub async fn list_my_keys(&self, user_id: &str) -> Result<Vec<EndpointApiKeyRow>, AppError> {
         let user_id = user_id.to_string();
@@ -436,7 +457,8 @@ impl Database {
             }
 
             params.push(Box::new(id.clone()));
-            let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+            let param_refs: Vec<&dyn rusqlite::types::ToSql> =
+                params.iter().map(|p| p.as_ref()).collect();
             let sql = format!(
                 "UPDATE endpoint_api_keys SET {} WHERE id = ?{}",
                 sets.join(", "),
