@@ -119,8 +119,20 @@ pub async fn login_handler(
 }
 
 /// POST /api/admin/logout
-pub async fn logout_handler(State(_db): State<Arc<Database>>) -> impl IntoResponse {
-    // TODO: delete session token from header
+///
+/// 从 Authorization header 提取 Bearer token 并删除对应 session。
+/// 即使 token 无效或已被删除也返回成功（不影响用户体验）。
+pub async fn logout_handler(
+    State(db): State<Arc<Database>>,
+    headers: axum::http::HeaderMap,
+) -> impl IntoResponse {
+    if let Some(token) = headers
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+    {
+        let _ = db.delete_session(token).await;
+    }
     Json(serde_json::json!({ "ok": true }))
 }
 
