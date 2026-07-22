@@ -2,7 +2,25 @@ use rusqlite::Connection;
 
 use crate::error::AppError;
 
+/// Current schema version — bump when adding new migrations below
+const SCHEMA_VERSION: i64 = 1;
+
 pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
+    log::info!("检查数据库迁移…");
+
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS schema_version (
+            version     INTEGER NOT NULL DEFAULT 1
+        );
+        ",
+    )?;
+
+    // Insert initial version if table was just created (empty)
+    let current_version: i64 = conn
+        .query_row("SELECT MAX(version) FROM schema_version", [], |r| r.get(0))
+        .unwrap_or(0);
+
     conn.execute_batch(
         "
         CREATE TABLE IF NOT EXISTS users (
@@ -218,6 +236,21 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
             "UPDATE usage_records SET created_at = datetime('now') WHERE created_at = '' OR created_at IS NULL",
             [],
         )?;
+    }
+
+    // ── Schema version tracking ─────────────────────────
+    if current_version < SCHEMA_VERSION {
+        conn.execute(
+            "INSERT INTO schema_version (version) VALUES (?1)",
+            [SCHEMA_VERSION],
+        )?;
+        log::info!(
+            "数据库迁移完成: v{} → v{}",
+            if current_version == 0 { "0".to_string() } else { current_version.to_string() },
+            SCHEMA_VERSION
+        );
+    } else {
+        log::info!("数据库已是最新版本 (v{})", SCHEMA_VERSION);
     }
 
     Ok(())
