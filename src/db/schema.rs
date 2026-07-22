@@ -246,7 +246,11 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         )?;
         log::info!(
             "数据库迁移完成: v{} → v{}",
-            if current_version == 0 { "0".to_string() } else { current_version.to_string() },
+            if current_version == 0 {
+                "0".to_string()
+            } else {
+                current_version.to_string()
+            },
             SCHEMA_VERSION
         );
     } else {

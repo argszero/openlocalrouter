@@ -36,9 +36,18 @@ pub struct UpdateApiKeyRequest {
 /// GET /api/admin/endpoints/:id/keys
 pub async fn list_api_keys(
     State(db): State<Arc<Database>>,
+    auth: AuthContext,
     Path(endpoint_id): Path<String>,
 ) -> Result<Json<Vec<EndpointApiKeyRow>>, AppError> {
-    let keys = db.list_api_keys_for_endpoint(&endpoint_id, None).await?;
+    // Non-admin users can only see keys they created or are assigned to
+    let user_filter = if auth.is_admin {
+        None
+    } else {
+        Some(auth.user_id.as_str())
+    };
+    let keys = db
+        .list_api_keys_for_endpoint(&endpoint_id, user_filter)
+        .await?;
     Ok(Json(keys))
 }
 
@@ -90,9 +99,21 @@ pub async fn create_api_key(
 /// PUT /api/admin/endpoints/:id/keys/:key_id
 pub async fn update_api_key(
     State(db): State<Arc<Database>>,
+    auth: AuthContext,
     Path((_endpoint_id, key_id)): Path<(String, String)>,
     Json(req): Json<UpdateApiKeyRequest>,
 ) -> Result<Json<EndpointApiKeyRow>, AppError> {
+    // Verify ownership: only admin or key creator/assignee can update
+    if !auth.is_admin {
+        let key = db
+            .get_api_key_by_id(&key_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("API Key 不存在".into()))?;
+        if key.created_by != auth.user_id && key.assigned_to != auth.user_id {
+            return Err(AppError::Message("无权修改此 API Key".into()));
+        }
+    }
+
     db.update_api_key(
         &key_id,
         req.name.as_deref(),
@@ -138,8 +159,20 @@ pub async fn update_api_key(
 /// DELETE /api/admin/endpoints/:id/keys/:key_id
 pub async fn delete_api_key(
     State(db): State<Arc<Database>>,
+    auth: AuthContext,
     Path((_endpoint_id, key_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    // Verify ownership: only admin or key creator/assignee can delete
+    if !auth.is_admin {
+        let key = db
+            .get_api_key_by_id(&key_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("API Key 不存在".into()))?;
+        if key.created_by != auth.user_id && key.assigned_to != auth.user_id {
+            return Err(AppError::Message("无权删除此 API Key".into()));
+        }
+    }
+
     db.delete_api_key(&key_id).await?;
     Ok(Json(serde_json::json!({"ok": true})))
 }
