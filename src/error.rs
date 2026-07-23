@@ -37,8 +37,9 @@ impl IntoResponse for AppError {
             AppError::Serde(e) => (StatusCode::BAD_REQUEST, e.to_string()),
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
             AppError::AlreadyExists(msg) => (StatusCode::CONFLICT, msg.clone()),
-            AppError::Validation(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
-            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
+            AppError::Validation(msg) | AppError::BadRequest(msg) => {
+                (StatusCode::BAD_REQUEST, msg.clone())
+            }
             AppError::Message(msg) => {
                 // 使用 401 作为认证/授权失败的默认状态码
                 let status = if msg.contains("用户名或密码错误") || msg.contains("已被禁用")

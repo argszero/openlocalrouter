@@ -188,10 +188,8 @@ pub fn openai_chat_to_anthropic(body: &Value) -> Value {
         .and_then(|c| c.get("finish_reason"))
         .and_then(|r| r.as_str())
         .map(|r| match r {
-            "stop" => "end_turn",
             "length" => "max_tokens",
             "tool_calls" | "function_call" => "tool_use",
-            "content_filter" => "end_turn",
             _ => "end_turn",
         })
         .or(if has_tool_use { Some("tool_use") } else { None });

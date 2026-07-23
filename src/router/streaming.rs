@@ -492,9 +492,7 @@ fn map_stop_reason(finish_reason: Option<&str>) -> Option<String> {
     finish_reason.map(|r| {
         match r {
             "tool_calls" | "function_call" => "tool_use",
-            "stop" => "end_turn",
             "length" => "max_tokens",
-            "content_filter" => "end_turn",
             _ => "end_turn",
         }
         .to_string()
