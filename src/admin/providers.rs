@@ -280,7 +280,7 @@ pub async fn create_model(
         provider_id: id.clone(),
         slug: req.slug,
         display_name: req.display_name,
-        context_window: req.context_window.unwrap_or(128000),
+        context_window: req.context_window.unwrap_or(128_000),
         extra_config,
     };
 

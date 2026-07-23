@@ -859,9 +859,9 @@ async fn write_usage_record(db: &Database, ctx: &UsageContext, usage: &TokenUsag
         provider_id: ctx.provider_id.clone(),
         provider_name: ctx.provider_name.clone(),
         model: ctx.model.clone(),
-        input_tokens: usage.input_tokens as i64,
-        output_tokens: usage.output_tokens as i64,
-        cache_read_tokens: usage.cache_read_tokens as i64,
+        input_tokens: i64::from(usage.input_tokens),
+        output_tokens: i64::from(usage.output_tokens),
+        cache_read_tokens: i64::from(usage.cache_read_tokens),
         created_at: String::new(),
     };
     if let Err(e) = db.insert_usage_record(&row).await {
@@ -967,9 +967,9 @@ impl futures::Stream for UsageRecordingStream {
                                 provider_id: ctx.provider_id,
                                 provider_name: ctx.provider_name,
                                 model: ctx.model,
-                                input_tokens: usage.input_tokens as i64,
-                                output_tokens: usage.output_tokens as i64,
-                                cache_read_tokens: usage.cache_read_tokens as i64,
+                                input_tokens: i64::from(usage.input_tokens),
+                                output_tokens: i64::from(usage.output_tokens),
+                                cache_read_tokens: i64::from(usage.cache_read_tokens),
                                 created_at: String::new(),
                             };
                             if let Err(e) = db.insert_usage_record(&row).await {

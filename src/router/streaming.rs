@@ -305,11 +305,11 @@ pub fn openai_sse_to_anthropic<E: std::error::Error + Send + 'static>(
                                                             });
 
                                                         if let Some(id) = &tool_call.id {
-                                                            state.id = id.clone();
+                                                            state.id.clone_from(id);
                                                         }
                                                         if let Some(function) = &tool_call.function {
                                                             if let Some(name) = &function.name {
-                                                                state.name = name.clone();
+                                                                state.name.clone_from(name);
                                                             }
                                                         }
 
