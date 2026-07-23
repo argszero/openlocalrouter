@@ -33,13 +33,9 @@ const RETRY_BACKOFF_MS: u64 = 500;
 /// 表示已通过 API Key 认证的请求上下文
 #[derive(Debug, Clone)]
 pub(crate) struct ProxyAuth {
-    #[allow(dead_code)]
     pub(crate) user_id: String,
-    #[allow(dead_code)]
     pub(crate) key_owner_id: String,
-    #[allow(dead_code)]
     pub(crate) endpoint_id: String,
-    #[allow(dead_code)]
     pub(crate) api_key_id: String,
 }
 

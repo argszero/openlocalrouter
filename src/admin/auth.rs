@@ -39,7 +39,6 @@ pub struct UserInfo {
 #[derive(Debug, Clone)]
 pub struct AuthContext {
     pub user_id: String,
-    #[allow(dead_code)]
     pub username: String,
     pub is_admin: bool,
 }
@@ -139,7 +138,6 @@ pub async fn logout_handler(
 // ── Auth Middleware ───────────────────────────────────
 
 /// 验证 Bearer session token，注入 AuthContext 到 request extensions。
-#[allow(dead_code)]
 pub async fn require_auth(
     State(db): State<Arc<Database>>,
     mut request: axum::http::Request<axum::body::Body>,
