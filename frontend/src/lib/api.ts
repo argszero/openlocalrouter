@@ -31,6 +31,10 @@ export const login = (username: string, password: string) =>
     body: JSON.stringify({ username, password }),
   })
 
+// ── Status ──────────────────────────────────────────
+export const getStatus = () =>
+  request<{ status: string; timestamp: string; version: string }>('/status')
+
 // ── Dashboard ───────────────────────────────────────
 export const getDashboard = () =>
   request<{
