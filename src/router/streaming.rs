@@ -132,7 +132,7 @@ pub fn openai_sse_to_anthropic<E: std::error::Error + Send + 'static>(
                                     log::debug!("[Proxy] <<< OpenAI SSE: [DONE]");
 
                                     if let Some((stop_reason, usage_json)) = pending_message_delta.take() {
-                                        let event = build_message_delta_event(stop_reason, usage_json);
+                                        let event = build_message_delta_event(stop_reason.as_ref(), usage_json);
                                         let sse_data = format!(
                                             "event: message_delta\ndata: {}\n\n",
                                             serde_json::to_string(&event).unwrap_or_default()
@@ -438,7 +438,7 @@ pub fn openai_sse_to_anthropic<E: std::error::Error + Send + 'static>(
         // Stream ended without [DONE] — emit pending events
         if !stream_ended_with_error {
             if let Some((stop_reason, usage_json)) = pending_message_delta.take() {
-                let event = build_message_delta_event(stop_reason, usage_json);
+                let event = build_message_delta_event(stop_reason.as_ref(), usage_json);
                 let sse_data = format!(
                     "event: message_delta\ndata: {}\n\n",
                     serde_json::to_string(&event).unwrap_or_default()
@@ -500,7 +500,7 @@ fn map_stop_reason(finish_reason: Option<&str>) -> Option<String> {
     })
 }
 
-fn build_message_delta_event(stop_reason: Option<String>, usage_json: Option<Value>) -> Value {
+fn build_message_delta_event(stop_reason: Option<&String>, usage_json: Option<Value>) -> Value {
     let usage = usage_json.unwrap_or(json!({"input_tokens": 0, "output_tokens": 0}));
     json!({
         "type": "message_delta",
