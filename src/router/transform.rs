@@ -395,26 +395,26 @@ fn build_usage(usage: Option<&Value>) -> Value {
 
     let cached = usage
         .get("cache_read_input_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .or_else(|| {
             usage
                 .pointer("/prompt_tokens_details/cached_tokens")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
         })
         .unwrap_or(0);
     let cache_creation = usage
         .get("cache_creation_input_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
     let input_tokens = usage
         .get("prompt_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0)
         .saturating_sub(cached)
         .saturating_sub(cache_creation);
     let output_tokens = usage
         .get("completion_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
 
     let mut usage_json = json!({
@@ -578,9 +578,9 @@ pub fn openai_chat_to_openai_responses(body: &Value) -> Value {
     let usage = body.get("usage");
     let usage_json = match usage {
         Some(u) => json!({
-            "input_tokens": u.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0),
-            "output_tokens": u.get("completion_tokens").and_then(|v| v.as_u64()).unwrap_or(0),
-            "total_tokens": u.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or(0)
+            "input_tokens": u.get("prompt_tokens").and_then(serde_json::Value::as_u64).unwrap_or(0),
+            "output_tokens": u.get("completion_tokens").and_then(serde_json::Value::as_u64).unwrap_or(0),
+            "total_tokens": u.get("total_tokens").and_then(serde_json::Value::as_u64).unwrap_or(0)
         }),
         None => json!({"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}),
     };
