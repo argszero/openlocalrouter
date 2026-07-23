@@ -1,11 +1,11 @@
 //! 协议格式转换（非流式）
 //!
-//! Anthropic Messages ↔ OpenAI Chat Completions 双向转换。
+//! `Anthropic Messages` ↔ `OpenAI Chat Completions` 双向转换。
 //! 支持 system prompts、tools、tool calls、images、thinking blocks。
 
 use serde_json::{json, Value};
 
-/// Anthropic Messages 请求 → OpenAI Chat Completions 请求
+/// `Anthropic Messages` 请求 → `OpenAI Chat Completions` 请求
 pub fn anthropic_to_openai_chat(body: &Value) -> Value {
     let mut result = json!({});
 
@@ -96,7 +96,7 @@ pub fn anthropic_to_openai_chat(body: &Value) -> Value {
     result
 }
 
-/// OpenAI Chat Completions 响应 → Anthropic Messages 响应
+/// `OpenAI Chat Completions` 响应 → `Anthropic Messages` 响应
 pub fn openai_chat_to_anthropic(body: &Value) -> Value {
     let choices = body.get("choices").and_then(|c| c.as_array());
     let choice = choices.and_then(|c| c.first());
@@ -430,7 +430,7 @@ fn build_usage(usage: Option<&Value>) -> Value {
     usage_json
 }
 
-/// OpenAI Responses 请求 → OpenAI Chat Completions 请求
+/// `OpenAI Responses` 请求 → `OpenAI Chat Completions` 请求
 ///
 /// 将 Responses API 格式降级为 Chat Completions 格式：
 /// - `input` (string 或 messages 数组) → `messages`
@@ -505,7 +505,7 @@ pub fn openai_responses_to_openai_chat(body: &Value) -> Value {
     result
 }
 
-/// OpenAI Chat Completions 响应 → OpenAI Responses 响应
+/// `OpenAI Chat Completions` 响应 → `OpenAI Responses` 响应
 ///
 /// 将 Chat Completions 格式包装为 Responses API 格式：
 /// - `choices[0].message.content` → `output[0].content[]`

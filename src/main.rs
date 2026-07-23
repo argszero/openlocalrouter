@@ -1,4 +1,4 @@
-//! OpenLocalRouter CLI 入口
+//! `OpenLocalRouter` CLI 入口
 //!
 //! 纯二进制模式 — 不依赖 Tauri，可直接用于 Docker 部署。
 

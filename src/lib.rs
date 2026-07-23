@@ -1,4 +1,4 @@
-//! OpenLocalRouter — 本机运行的协议无关 AI API 路由网关
+//! `OpenLocalRouter` — 本机运行的协议无关 AI API 路由网关
 //!
 //! 核心库，提供代理服务器和管理 API 的启动逻辑。
 //! CLI 和 Tauri 入口均通过 `run_backend` 函数使用本库。
@@ -10,7 +10,7 @@ pub mod db;
 pub mod error;
 mod router;
 
-/// 启动后端服务（管理 API + 代理共用一个端口），返回 tokio JoinHandle。
+/// 启动后端服务（管理 API + 代理共用一个端口），返回 `tokio` `JoinHandle`。
 pub async fn run_backend(
     config: config::AppConfig,
     db: db::Database,

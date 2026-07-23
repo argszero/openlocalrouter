@@ -1,12 +1,12 @@
 //! HTTP 请求处理器
 //!
 //! 核心代理 handler：
-//! - handle_models: 聚合模型列表（无需认证）
-//! - handle_chat_completions: OpenAI Chat Completions（需 Bearer API Key）
-//! - handle_messages: Anthropic Messages（需 Bearer API Key）
-//! - handle_responses: OpenAI Responses（需 Bearer API Key）
+//! - `handle_models`: 聚合模型列表（无需认证）
+//! - `handle_chat_completions`: `OpenAI Chat Completions`（需 Bearer API Key）
+//! - `handle_messages`: Anthropic Messages（需 Bearer API Key）
+//! - `handle_responses`: `OpenAI Responses`（需 Bearer API Key）
 //!
-//! 支持：SSE 流式透传 + OpenAI ↔ Anthropic 协议转换
+//! 支持：`SSE` 流式透传 + `OpenAI` ↔ `Anthropic` 协议转换
 
 use super::types::ProxyState;
 use super::usage::{TokenUsage, UsageContext};
@@ -113,7 +113,7 @@ pub async fn health_check() -> impl IntoResponse {
     }))
 }
 
-/// 从请求 URL 中提取端点 listen_path
+/// 从请求 URL 中提取端点 `listen_path`
 pub(crate) async fn extract_endpoint_path(db: &Database, uri: &str) -> Option<String> {
     let path = uri.split('?').next().unwrap_or("");
     let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
@@ -143,7 +143,7 @@ pub(crate) fn extract_model_from_body(body: &[u8]) -> Option<String> {
         .map(std::string::ToString::to_string)
 }
 
-/// 从 ModelRow 解析实际请求上游的模型名
+/// 从 `ModelRow` 解析实际请求上游的模型名
 fn resolve_upstream_model(model_row: &crate::db::dao::ModelRow) -> String {
     serde_json::from_str::<serde_json::Value>(&model_row.extra_config)
         .ok()
@@ -219,7 +219,7 @@ pub async fn handle_models(
     .into_response()
 }
 
-/// POST /chat/completions — OpenAI Chat
+/// `POST /chat/completions` — `OpenAI Chat`
 pub async fn handle_chat_completions(
     State(state): State<ProxyState>,
     req: axum::http::Request<Body>,
@@ -227,7 +227,7 @@ pub async fn handle_chat_completions(
     proxy_request(state, req, "openai_chat").await
 }
 
-/// POST /responses — OpenAI Responses
+/// `POST /responses` — `OpenAI Responses`
 pub async fn handle_responses(
     State(state): State<ProxyState>,
     req: axum::http::Request<Body>,
@@ -820,7 +820,7 @@ async fn handle_passthrough_response(
 /// 计算上游路径
 ///
 /// 根据转发协议确定正确的 API 路径，避免用户 URL 中的冗余前缀
-/// 被拼接到上游 base_url 后产生双重路径（如 /v1/v1/chat/completions）。
+/// 被拼接到上游 `base_url` 后产生双重路径（如 `/v1/v1/chat/completions`）。
 fn compute_upstream_path(full_uri: &str, listen_path: &str, protocol: &str) -> String {
     let query = full_uri
         .split('?')
@@ -872,7 +872,7 @@ async fn write_usage_record(db: &Database, ctx: &UsageContext, usage: &TokenUsag
 /// 流式响应用量记录包装器
 ///
 /// 包装一个 `Pin<Box<dyn Stream>>`，在数据流经时从 SSE chunk 中提取 usage 信息。
-/// Stream 结束时通过 tokio::spawn 异步写入 DB。
+/// `Stream` 结束时通过 `tokio::spawn` 异步写入 `DB`。
 struct UsageRecordingStream {
     inner: Pin<Box<dyn futures::Stream<Item = Result<Bytes, std::io::Error>> + Send>>,
     protocol: String,

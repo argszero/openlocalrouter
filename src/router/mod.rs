@@ -24,7 +24,7 @@ use std::sync::Arc;
 
 /// 构建代理路由（挂载到管理 API 的 Router 上，共享同一端口）
 ///
-/// 返回 Router<()>，可与 admin Router 合并后用 axum::serve 提供服务
+/// 返回 `Router<()>`，可与 admin `Router` 合并后用 `axum::serve` 提供服务
 pub fn build_proxy_routes(db: Arc<Database>, frontend_dir: PathBuf) -> Router<()> {
     let state = types::ProxyState { db, frontend_dir };
 

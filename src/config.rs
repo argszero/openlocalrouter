@@ -61,7 +61,7 @@ impl Default for AppConfig {
 
 impl AppConfig {
     /// 从默认路径加载配置，不存在则使用默认值。
-    /// 支持环境变量覆盖（OLR_LISTEN_ADDRESS, OLR_LOG_LEVEL），便于 Docker 部署。
+    /// 支持环境变量覆盖（`OLR_LISTEN_ADDRESS`, `OLR_LOG_LEVEL`），便于 Docker 部署。
     pub fn load() -> Self {
         let config_path = Self::config_path();
         let mut config = if config_path.exists() {
