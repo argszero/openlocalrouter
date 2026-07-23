@@ -1423,12 +1423,14 @@ impl Database {
         to: Option<&str>,
     ) -> Result<SharedUsageSummary, AppError> {
         let key_owner_id = key_owner_id.to_string();
-        let from = from
-            .map(std::string::ToString::to_string)
-            .unwrap_or_else(|| String::from("2000-01-01"));
-        let to = to
-            .map(std::string::ToString::to_string)
-            .unwrap_or_else(|| String::from("2099-12-31"));
+        let from = from.map_or_else(
+            || String::from("2000-01-01"),
+            std::string::ToString::to_string,
+        );
+        let to = to.map_or_else(
+            || String::from("2099-12-31"),
+            std::string::ToString::to_string,
+        );
 
         self.with_conn(move |conn| {
             // Today tokens
