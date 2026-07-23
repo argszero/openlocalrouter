@@ -1043,7 +1043,6 @@ impl Database {
     }
 
     #[allow(clippy::too_many_arguments)]
-    #[allow(clippy::too_many_arguments)]
     /// # Errors
     /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_usage_records(
