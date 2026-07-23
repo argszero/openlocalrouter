@@ -34,15 +34,11 @@ fn main() {
                 config.admin_port
             );
 
-            // 启动后端服务
-            let (admin_handle, proxy_handle) =
-                tauri::async_runtime::block_on(run_backend(config.clone(), db));
+            // 启动后端服务（单端口设计，返回单个 JoinHandle）
+            let backend_handle = tauri::async_runtime::block_on(run_backend(config.clone(), db));
 
             // 在 app 存储中保存句柄，方便退出时清理
-            app.manage(BackendHandles {
-                admin_handle,
-                proxy_handle,
-            });
+            app.manage(BackendHandles { backend_handle });
             app.manage(config.clone());
 
             #[cfg(target_os = "macos")]
@@ -78,8 +74,7 @@ fn main() {
                         }
                         "quit" => {
                             let handles = app.state::<BackendHandles>();
-                            handles.admin_handle.abort();
-                            handles.proxy_handle.abort();
+                            handles.backend_handle.abort();
                             app.exit(0);
                         }
                         _ => {}
@@ -111,6 +106,5 @@ fn main() {
 
 /// 后端 tokio 任务句柄，退出时 abort
 struct BackendHandles {
-    admin_handle: tokio::task::JoinHandle<()>,
-    proxy_handle: tokio::task::JoinHandle<()>,
+    backend_handle: tokio::task::JoinHandle<()>,
 }
