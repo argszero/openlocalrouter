@@ -37,22 +37,22 @@ pub fn get_presets() -> Vec<ProviderPreset> {
                 PresetModelHint {
                     slug: "gpt-4o".into(),
                     display_name: "GPT-4o".into(),
-                    context_window: Some(128000),
+                    context_window: Some(128_000),
                 },
                 PresetModelHint {
                     slug: "gpt-4o-mini".into(),
                     display_name: "GPT-4o Mini".into(),
-                    context_window: Some(128000),
+                    context_window: Some(128_000),
                 },
                 PresetModelHint {
                     slug: "gpt-5".into(),
                     display_name: "GPT-5".into(),
-                    context_window: Some(128000),
+                    context_window: Some(128_000),
                 },
                 PresetModelHint {
                     slug: "o3".into(),
                     display_name: "o3".into(),
-                    context_window: Some(200000),
+                    context_window: Some(200_000),
                 },
             ]),
         },
@@ -68,17 +68,17 @@ pub fn get_presets() -> Vec<ProviderPreset> {
                 PresetModelHint {
                     slug: "claude-sonnet-5".into(),
                     display_name: "Claude Sonnet 5".into(),
-                    context_window: Some(200000),
+                    context_window: Some(200_000),
                 },
                 PresetModelHint {
                     slug: "claude-haiku-4-5".into(),
                     display_name: "Claude Haiku 4.5".into(),
-                    context_window: Some(200000),
+                    context_window: Some(200_000),
                 },
                 PresetModelHint {
                     slug: "claude-opus-4-8".into(),
                     display_name: "Claude Opus 4.8".into(),
-                    context_window: Some(200000),
+                    context_window: Some(200_000),
                 },
             ]),
         },
@@ -94,12 +94,12 @@ pub fn get_presets() -> Vec<ProviderPreset> {
                 PresetModelHint {
                     slug: "gemini-2.5-pro".into(),
                     display_name: "Gemini 2.5 Pro".into(),
-                    context_window: Some(2097152),
+                    context_window: Some(2_097_152),
                 },
                 PresetModelHint {
                     slug: "gemini-2.5-flash".into(),
                     display_name: "Gemini 2.5 Flash".into(),
-                    context_window: Some(1048576),
+                    context_window: Some(1_048_576),
                 },
             ]),
         },
@@ -115,12 +115,12 @@ pub fn get_presets() -> Vec<ProviderPreset> {
                 PresetModelHint {
                     slug: "llama-4-scout".into(),
                     display_name: "Llama 4 Scout".into(),
-                    context_window: Some(131072),
+                    context_window: Some(131_072),
                 },
                 PresetModelHint {
                     slug: "mixtral-8x7b".into(),
                     display_name: "Mixtral 8x7B".into(),
-                    context_window: Some(32768),
+                    context_window: Some(32_768),
                 },
             ]),
         },
