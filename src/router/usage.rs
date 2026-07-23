@@ -44,13 +44,17 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
 
     // OpenAI Chat: prompt_tokens / completion_tokens
     if let (Some(prompt), Some(completion)) = (
-        usage.get("prompt_tokens").and_then(|v| v.as_u64()),
-        usage.get("completion_tokens").and_then(|v| v.as_u64()),
+        usage
+            .get("prompt_tokens")
+            .and_then(serde_json::Value::as_u64),
+        usage
+            .get("completion_tokens")
+            .and_then(serde_json::Value::as_u64),
     ) {
         let cached = usage
             .get("prompt_tokens_details")
             .and_then(|d| d.get("cached_tokens"))
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
 
         return Some(TokenUsage {
@@ -62,12 +66,16 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
 
     // OpenAI Responses / Anthropic: input_tokens / output_tokens
     if let (Some(input), Some(output)) = (
-        usage.get("input_tokens").and_then(|v| v.as_u64()),
-        usage.get("output_tokens").and_then(|v| v.as_u64()),
+        usage
+            .get("input_tokens")
+            .and_then(serde_json::Value::as_u64),
+        usage
+            .get("output_tokens")
+            .and_then(serde_json::Value::as_u64),
     ) {
         let cached = usage
             .get("cache_read_input_tokens")
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
 
         return Some(TokenUsage {
@@ -86,15 +94,18 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
 /// 注意：SSE chunk 可能不是纯 JSON，需要先处理 `data: ` 前缀
 pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
     chunk.get("usage").map(|u| {
-        let prompt = u.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
+        let prompt = u
+            .get("prompt_tokens")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0);
         let completion = u
             .get("completion_tokens")
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
         let cached = u
             .get("prompt_tokens_details")
             .and_then(|d| d.get("cached_tokens"))
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0);
 
         TokenUsage {
@@ -115,17 +126,17 @@ pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsa
     let usage = chunk.get("usage")?;
     let cached = usage
         .get("cache_read_input_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
 
     Some(TokenUsage {
         input_tokens: usage
             .get("input_tokens")
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0) as u32,
         output_tokens: usage
             .get("output_tokens")
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0) as u32,
         cache_read_tokens: cached as u32,
     })
@@ -143,15 +154,15 @@ pub(crate) fn extract_usage_from_responses_sse(chunk: &Value) -> Option<TokenUsa
 
     let input = usage
         .get("input_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
     let output = usage
         .get("output_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
     let cached = usage
         .get("cache_read_input_tokens")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
 
     Some(TokenUsage {
