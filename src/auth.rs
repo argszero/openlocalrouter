@@ -43,12 +43,14 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
 }
 
 /// 生成 64 字符 hex session token
+#[must_use]
 pub fn generate_session_token() -> String {
     let bytes: [u8; 32] = rand::random();
     hex::encode(bytes)
 }
 
 /// 生成端点 API Key，格式: olr_{32字节 base64url}
+#[must_use]
 pub fn generate_api_key() -> (String, String) {
     let random_bytes: [u8; 32] = rand::random();
     let raw = URL_SAFE_NO_PAD.encode(random_bytes);
@@ -58,6 +60,7 @@ pub fn generate_api_key() -> (String, String) {
 }
 
 /// 生成随机 12 位密码
+#[must_use]
 pub fn generate_password() -> String {
     use rand::Rng;
     let charset: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -71,6 +74,7 @@ pub fn generate_password() -> String {
 }
 
 /// 计算 API Key 的 SHA-256 哈希（用于存储）
+#[must_use]
 pub fn hash_api_key(key: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
@@ -78,6 +82,7 @@ pub fn hash_api_key(key: &str) -> String {
 }
 
 /// 计算 SHA-256 哈希
+#[must_use]
 pub fn sha256_hash(data: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(data.as_bytes());
