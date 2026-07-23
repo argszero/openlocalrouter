@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { getStatus } from '../lib/api'
 import { LayoutDashboard, Globe, Server, Users, BarChart3, LogOut } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: '仪表板' },
@@ -14,6 +16,11 @@ const navItems = [
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [version, setVersion] = useState<string>('')
+
+  useEffect(() => {
+    getStatus().then(s => setVersion(s.version)).catch(() => {})
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -25,7 +32,10 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-gray-200 flex flex-col shrink-0">
         <div className="p-4 border-b border-gray-100">
-          <h1 className="text-lg font-semibold text-gray-800">OLR</h1>
+          <h1 className="text-lg font-semibold text-gray-800">
+            OLR
+            {version && <span className="ml-1.5 text-xs font-normal text-gray-400 align-middle">v{version}</span>}
+          </h1>
           <p className="text-xs text-gray-400 mt-0.5">管理控制台</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
