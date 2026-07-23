@@ -525,12 +525,11 @@ where
             Err(e) => return Err(std::io::Error::other(e)),
         };
 
-        let chunk_str = match std::str::from_utf8(&chunk) {
-            Ok(s) => s.to_string(),
-            Err(_) => {
-                let sse = format!("data: {}\n\n", String::from_utf8_lossy(&chunk));
-                return Ok(Bytes::from(sse));
-            }
+        let chunk_str = if let Ok(s) = std::str::from_utf8(&chunk) {
+            s.to_string()
+        } else {
+            let sse = format!("data: {}\n\n", String::from_utf8_lossy(&chunk));
+            return Ok(Bytes::from(sse));
         };
 
         let mut events = String::new();
@@ -547,14 +546,13 @@ where
                     continue;
                 }
 
-                let v: Value = match serde_json::from_str(data) {
-                    Ok(v) => v,
-                    Err(_) => {
-                        // Preserve non-JSON data lines
-                        events.push_str(line);
-                        events.push('\n');
-                        continue;
-                    }
+                let v: Value = if let Ok(v) = serde_json::from_str(data) {
+                    v
+                } else {
+                    // Preserve non-JSON data lines
+                    events.push_str(line);
+                    events.push('\n');
+                    continue;
                 };
 
                 let id = v
