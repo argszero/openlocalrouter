@@ -38,6 +38,7 @@ pub(crate) struct UsageContext {
 /// - `OpenAI Chat`:     `{ "usage": { "prompt_tokens": N, "completion_tokens": N } }`
 /// - `OpenAI Responses`: `{ "usage": { "input_tokens": N, "output_tokens": N } }`
 /// - Anthropic:       `{ "usage": { "input_tokens": N, "output_tokens": N } }`
+#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
     let v: Value = serde_json::from_slice(data).ok()?;
     let usage = v.get("usage")?;
@@ -92,6 +93,7 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
 ///
 /// 格式: `{ "usage": { "prompt_tokens": N, "completion_tokens": N, ... } }`
 /// 注意：SSE chunk 可能不是纯 JSON，需要先处理 `data: ` 前缀
+#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
     chunk.get("usage").map(|u| {
         let prompt = u
@@ -119,6 +121,7 @@ pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
 /// 从 Anthropic SSE `message_delta` 事件提取 usage
 ///
 /// 格式: `{ "type": "message_delta", "usage": { "input_tokens": N, "output_tokens": N } }`
+#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsage> {
     if chunk.get("type")?.as_str()? != "message_delta" {
         return None;
@@ -146,6 +149,7 @@ pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsa
 ///
 /// 格式: `{ "type": "response.completed", "response": { "usage": { ... } } }`
 #[cfg(test)]
+#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_responses_sse(chunk: &Value) -> Option<TokenUsage> {
     if chunk.get("type")?.as_str()? != "response.completed" {
         return None;
