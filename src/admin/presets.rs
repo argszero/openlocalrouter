@@ -162,7 +162,7 @@ pub fn get_presets() -> Vec<ProviderPreset> {
         },
         ProviderPreset {
             name: "自定义".into(),
-            base_url: "".into(),
+            base_url: String::new(),
             api_types: vec!["openai_chat".into()],
             api_urls: None,
             icon: "⚙️".into(),
