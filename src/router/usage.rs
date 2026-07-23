@@ -134,7 +134,7 @@ pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsa
 /// 从 OpenAI Responses SSE response.completed 事件提取 usage
 ///
 /// 格式: `{ "type": "response.completed", "response": { "usage": { ... } } }`
-#[allow(dead_code)]
+#[cfg(test)]
 pub(crate) fn extract_usage_from_responses_sse(chunk: &Value) -> Option<TokenUsage> {
     if chunk.get("type")?.as_str()? != "response.completed" {
         return None;
