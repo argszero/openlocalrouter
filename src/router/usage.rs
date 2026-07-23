@@ -7,6 +7,7 @@ use serde_json::Value;
 
 /// 从响应中提取的 token 用量
 #[derive(Debug, Default, Clone)]
+#[allow(clippy::struct_field_names)]
 pub(crate) struct TokenUsage {
     pub input_tokens: u32,
     pub output_tokens: u32,
