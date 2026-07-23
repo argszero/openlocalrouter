@@ -62,6 +62,7 @@ impl Default for AppConfig {
 impl AppConfig {
     /// 从默认路径加载配置，不存在则使用默认值。
     /// 支持环境变量覆盖（`OLR_LISTEN_ADDRESS`, `OLR_LOG_LEVEL`），便于 Docker 部署。
+    #[must_use]
     pub fn load() -> Self {
         let config_path = Self::config_path();
         let mut config = if config_path.exists() {
@@ -95,6 +96,7 @@ impl AppConfig {
     }
 
     /// 配置文件路径
+    #[must_use]
     pub fn config_path() -> PathBuf {
         dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from("."))
@@ -103,6 +105,7 @@ impl AppConfig {
     }
 
     /// 数据库路径
+    #[must_use]
     pub fn database_path(&self) -> PathBuf {
         self.data_dir.join("openlocalrouter.db")
     }
