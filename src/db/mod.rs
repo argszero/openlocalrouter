@@ -18,6 +18,10 @@ pub struct Database {
 
 impl Database {
     /// 打开或创建数据库文件
+    ///
+    /// # Errors
+    ///
+    /// 如果无法创建父目录、打开数据库文件或运行迁移，返回 `AppError`。
     pub fn open(path: &Path) -> Result<Self, AppError> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
