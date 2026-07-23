@@ -57,7 +57,7 @@ pub struct ModelWithVisibility {
     pub visible_endpoint_ids: Vec<String>,
 }
 
-/// Build extra_config JSON string, merging api_urls into the provided base config.
+/// Build `extra_config` JSON string, merging `api_urls` into the provided base config.
 fn build_extra_config(
     base_extra_config: Option<&str>,
     api_urls: Option<&HashMap<String, String>>,
@@ -81,14 +81,14 @@ fn build_extra_config(
     serde_json::to_string(&config).unwrap_or_else(|_| "{}".into())
 }
 
-/// Parse api_urls from extra_config JSON string
+/// Parse `api_urls` from `extra_config` JSON string
 fn parse_api_urls(extra_config: &str) -> Option<HashMap<String, String>> {
     let v: serde_json::Value = serde_json::from_str(extra_config).ok()?;
     v.get("api_urls")
         .and_then(|u| serde_json::from_value(u.clone()).ok())
 }
 
-/// Enrich a provider JSON response with api_types array and api_urls
+/// Enrich a provider JSON response with `api_types` array and `api_urls`
 fn enrich_provider_json(p: &ProviderRow) -> serde_json::Value {
     let api_types: Vec<&str> = p.api_type.split(',').filter(|s| !s.is_empty()).collect();
     let mut val = serde_json::to_value(p).unwrap_or_default();
@@ -307,7 +307,7 @@ pub async fn create_model(
     })))
 }
 
-/// DELETE /api/admin/providers/:id/models/:model_id
+/// `DELETE /api/admin/providers/:id/models/:model_id`
 pub async fn delete_model(
     State(db): State<Arc<Database>>,
     Path((_provider_id, model_id)): Path<(String, String)>,
@@ -321,7 +321,7 @@ pub async fn delete_model(
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
-/// PUT /api/admin/providers/:id/models/:model_id/visibility
+/// `PUT /api/admin/providers/:id/models/:model_id/visibility`
 #[derive(Debug, Deserialize)]
 pub struct SetVisibilityRequest {
     pub endpoint_ids: Vec<String>,

@@ -1,6 +1,6 @@
 //! 流式响应转换
 //!
-//! OpenAI SSE → Anthropic SSE 格式转换。
+//! `OpenAI` `SSE` → `Anthropic` `SSE` 格式转换。
 //! 支持工具调用、thinking (reasoning) blocks、usage 映射。
 
 use crate::router::sse::{append_utf8_safe, strip_sse_field, take_sse_block};
@@ -11,7 +11,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-/// OpenAI 流式响应 chunk
+/// `OpenAI` 流式响应 chunk
 #[derive(Debug, Deserialize)]
 struct OpenAIStreamChunk {
     #[serde(default)]
@@ -91,7 +91,7 @@ struct ToolBlockState {
     pending_args: String,
 }
 
-/// Create an Anthropic SSE stream from an OpenAI SSE stream.
+/// Create an Anthropic SSE stream from an `OpenAI` SSE stream.
 /// Supports passthrough + transform of tool calls, thinking blocks, and usage.
 pub fn openai_sse_to_anthropic<E: std::error::Error + Send + 'static>(
     stream: impl Stream<Item = Result<Bytes, E>> + Send + 'static,
@@ -512,7 +512,7 @@ fn build_message_delta_event(stop_reason: Option<String>, usage_json: Option<Val
 
 // ── OpenAI Chat SSE → OpenAI Responses SSE ──
 
-/// 将 OpenAI Chat Completions SSE 流转换为 OpenAI Responses SSE 流
+/// 将 `OpenAI Chat Completions` `SSE` 流转换为 `OpenAI Responses` `SSE` 流
 pub fn openai_sse_to_openai_responses<S>(
     input_stream: S,
 ) -> impl Stream<Item = Result<Bytes, std::io::Error>>

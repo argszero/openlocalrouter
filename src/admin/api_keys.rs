@@ -96,7 +96,7 @@ pub async fn create_api_key(
     }))
 }
 
-/// PUT /api/admin/endpoints/:id/keys/:key_id
+/// `PUT /api/admin/endpoints/:id/keys/:key_id`
 pub async fn update_api_key(
     State(db): State<Arc<Database>>,
     auth: AuthContext,
@@ -154,7 +154,7 @@ pub async fn update_api_key(
     Ok(Json(keys?))
 }
 
-/// DELETE /api/admin/endpoints/:id/keys/:key_id
+/// `DELETE /api/admin/endpoints/:id/keys/:key_id`
 pub async fn delete_api_key(
     State(db): State<Arc<Database>>,
     auth: AuthContext,

@@ -137,7 +137,7 @@ pub async fn logout_handler(
 
 // ── Auth Middleware ───────────────────────────────────
 
-/// 验证 Bearer session token，注入 AuthContext 到 request extensions。
+/// 验证 `Bearer` session token，注入 `AuthContext` 到 request extensions。
 pub async fn require_auth(
     State(db): State<Arc<Database>>,
     mut request: axum::http::Request<axum::body::Body>,

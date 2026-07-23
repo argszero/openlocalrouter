@@ -1,7 +1,7 @@
 //! 用量提取和记录
 //!
 //! 从各协议（OpenAI Chat、OpenAI Responses、Anthropic Messages）的
-//! 响应中提取 token 用量信息，用于写入 usage_records 表。
+//! 响应中提取 token 用量信息，用于写入 `usage_records` 表。
 
 use serde_json::Value;
 
@@ -20,7 +20,7 @@ impl TokenUsage {
     }
 }
 
-/// 用量记录上下文，在 proxy_request 认证后构建
+/// 用量记录上下文，在 `proxy_request` 认证后构建
 #[derive(Debug, Clone)]
 pub(crate) struct UsageContext {
     pub api_key_id: String,
@@ -35,8 +35,8 @@ pub(crate) struct UsageContext {
 /// 从各协议的非流式响应 body 中提取 usage
 ///
 /// 支持格式：
-/// - OpenAI Chat:     `{ "usage": { "prompt_tokens": N, "completion_tokens": N } }`
-/// - OpenAI Responses: `{ "usage": { "input_tokens": N, "output_tokens": N } }`
+/// - `OpenAI Chat`:     `{ "usage": { "prompt_tokens": N, "completion_tokens": N } }`
+/// - `OpenAI Responses`: `{ "usage": { "input_tokens": N, "output_tokens": N } }`
 /// - Anthropic:       `{ "usage": { "input_tokens": N, "output_tokens": N } }`
 pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
     let v: Value = serde_json::from_slice(data).ok()?;
@@ -88,7 +88,7 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
     None
 }
 
-/// 从 OpenAI Chat SSE chunk 提取 usage（last chunk before [DONE]）
+/// 从 `OpenAI Chat` `SSE` chunk 提取 usage（last chunk before `[DONE]`）
 ///
 /// 格式: `{ "usage": { "prompt_tokens": N, "completion_tokens": N, ... } }`
 /// 注意：SSE chunk 可能不是纯 JSON，需要先处理 `data: ` 前缀
@@ -116,7 +116,7 @@ pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
     })
 }
 
-/// 从 Anthropic SSE message_delta 事件提取 usage
+/// 从 Anthropic SSE `message_delta` 事件提取 usage
 ///
 /// 格式: `{ "type": "message_delta", "usage": { "input_tokens": N, "output_tokens": N } }`
 pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsage> {
@@ -142,7 +142,7 @@ pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsa
     })
 }
 
-/// 从 OpenAI Responses SSE response.completed 事件提取 usage
+/// 从 `OpenAI Responses` `SSE` `response.completed` 事件提取 usage
 ///
 /// 格式: `{ "type": "response.completed", "response": { "usage": { ... } } }`
 #[cfg(test)]

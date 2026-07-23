@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 
 /// 数据库包装
 ///
-/// 使用 tokio::sync::Mutex 包装 rusqlite::Connection，
+/// 使用 `tokio::sync::Mutex` 包装 `rusqlite::Connection`，
 /// 支持跨线程的异步访问。所有 DAO 方法通过 `with_conn` 执行。
 #[derive(Clone)]
 pub struct Database {
