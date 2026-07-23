@@ -170,26 +170,20 @@ pub async fn handle_models(
 ) -> impl IntoResponse {
     let uri = req.uri().to_string();
 
-    let endpoint_path = match extract_endpoint_path(&state.db, &uri).await {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({"error": {"message": "端点未找到", "code": 404}})),
-            )
-                .into_response();
-        }
+    let Some(endpoint_path) = extract_endpoint_path(&state.db, &uri).await else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": {"message": "端点未找到", "code": 404}})),
+        )
+            .into_response();
     };
 
-    let endpoint = match state.db.get_endpoint_by_path(&endpoint_path).await {
-        Ok(Some(ep)) => ep,
-        _ => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({"error": {"message": "端点不存在", "code": 404}})),
-            )
-                .into_response();
-        }
+    let Ok(Some(endpoint)) = state.db.get_endpoint_by_path(&endpoint_path).await else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": {"message": "端点不存在", "code": 404}})),
+        )
+            .into_response();
     };
 
     let models = state
@@ -261,26 +255,20 @@ async fn proxy_request(
     let headers = parts.headers.clone();
 
     // 1. 匹配端点（每次请求查 DB，实现热加载）
-    let endpoint_path = match extract_endpoint_path(&state.db, &uri_str).await {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({"error": {"message": "端点未找到", "code": 404}})),
-            )
-                .into_response();
-        }
+    let Some(endpoint_path) = extract_endpoint_path(&state.db, &uri_str).await else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": {"message": "端点未找到", "code": 404}})),
+        )
+            .into_response();
     };
 
-    let endpoint = match state.db.get_endpoint_by_path(&endpoint_path).await {
-        Ok(Some(ep)) => ep,
-        _ => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({"error": {"message": "端点不存在", "code": 404}})),
-            )
-                .into_response();
-        }
+    let Ok(Some(endpoint)) = state.db.get_endpoint_by_path(&endpoint_path).await else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": {"message": "端点不存在", "code": 404}})),
+        )
+            .into_response();
     };
 
     // 2. API Key 认证
