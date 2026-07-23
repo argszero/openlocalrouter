@@ -570,9 +570,8 @@ where
                 let choices = v.get("choices").and_then(|c| c.as_array());
 
                 if let Some(choices) = choices {
-                    let first = match choices.first() {
-                        Some(c) => c,
-                        None => continue,
+                    let Some(first) = choices.first() else {
+                        continue;
                     };
 
                     let delta = first.get("delta");

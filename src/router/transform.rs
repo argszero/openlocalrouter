@@ -218,13 +218,12 @@ fn strip_billing_header(text: &str) -> &str {
     if !text.starts_with(BILLING_HEADER_PREFIX) {
         return text;
     }
-    let line_end = match text
+    let Some(line_end) = text
         .as_bytes()
         .iter()
         .position(|b| *b == b'\n' || *b == b'\r')
-    {
-        Some(p) => p,
-        None => return "",
+    else {
+        return "";
     };
     let bytes = text.as_bytes();
     let mut rest_start = line_end + 1;
@@ -385,9 +384,8 @@ fn map_tool_choice(tool_choice: &Value) -> Value {
 }
 
 fn build_usage(usage: Option<&Value>) -> Value {
-    let usage = match usage {
-        Some(u) => u,
-        None => return json!({"input_tokens": 0, "output_tokens": 0}),
+    let Some(usage) = usage else {
+        return json!({"input_tokens": 0, "output_tokens": 0});
     };
 
     let cached = usage
