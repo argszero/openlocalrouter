@@ -103,27 +103,19 @@ pub async fn update_api_key(
     Path((_endpoint_id, key_id)): Path<(String, String)>,
     Json(req): Json<UpdateApiKeyRequest>,
 ) -> Result<Json<EndpointApiKeyRow>, AppError> {
-    // Verify ownership: only admin or key creator/assignee can update.
-    // Assignees can update name/enabled but NOT reassign to another user.
-    let mut is_assignee_only = false;
+    // Verify ownership: only admin or key creator can update.
+    // Assignees (shared key recipients) have read-only access — no updates allowed.
     if !auth.is_admin {
         let key = db
             .get_api_key_by_id(&key_id)
             .await?
             .ok_or_else(|| AppError::NotFound("API Key 不存在".into()))?;
-        if key.created_by != auth.user_id && key.assigned_to != auth.user_id {
+        if key.created_by != auth.user_id {
             return Err(AppError::Message("无权修改此 API Key".into()));
-        }
-        if key.created_by != auth.user_id && key.assigned_to == auth.user_id {
-            is_assignee_only = true;
         }
     }
 
-    let assigned_to = if is_assignee_only {
-        None
-    } else {
-        req.assigned_to.as_deref()
-    };
+    let assigned_to = req.assigned_to.as_deref();
 
     db.update_api_key(&key_id, req.name.as_deref(), req.enabled, assigned_to)
         .await?;
@@ -168,13 +160,14 @@ pub async fn delete_api_key(
     auth: AuthContext,
     Path((_endpoint_id, key_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    // Verify ownership: only admin or key creator/assignee can delete
+    // Verify ownership: only admin or key creator can delete.
+    // Assignees (shared key recipients) have read-only access — no deletion allowed.
     if !auth.is_admin {
         let key = db
             .get_api_key_by_id(&key_id)
             .await?
             .ok_or_else(|| AppError::NotFound("API Key 不存在".into()))?;
-        if key.created_by != auth.user_id && key.assigned_to != auth.user_id {
+        if key.created_by != auth.user_id {
             return Err(AppError::Message("无权删除此 API Key".into()));
         }
     }
