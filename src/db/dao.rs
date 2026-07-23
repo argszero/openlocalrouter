@@ -342,7 +342,7 @@ impl Database {
         user_id_filter: Option<&str>,
     ) -> Result<Vec<EndpointApiKeyRow>, AppError> {
         let endpoint_id = endpoint_id.to_string();
-        let user_id_filter = user_id_filter.map(|s| s.to_string());
+        let user_id_filter = user_id_filter.map(std::string::ToString::to_string);
         self.with_conn(move |conn| {
             let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(endpoint_id)];
             let mut sql = "SELECT id, endpoint_id, user_id, created_by, assigned_to, name, key_value, key_hash, key_prefix, enabled, created_at, last_used_at
@@ -353,7 +353,7 @@ impl Database {
             }
             sql.push_str(" ORDER BY created_at");
 
-            let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+            let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(std::convert::AsRef::as_ref).collect();
             let mut stmt = conn.prepare(&sql)?;
             let rows = stmt.query_map(param_refs.as_slice(), |row| {
                 key_row_from_row(row)
@@ -431,9 +431,9 @@ impl Database {
         assigned_to: Option<&str>,
     ) -> Result<(), AppError> {
         let id = id.to_string();
-        let name = name.map(|s| s.to_string());
+        let name = name.map(std::string::ToString::to_string);
         let enabled = enabled.map(i32::from);
-        let assigned_to = assigned_to.map(|s| s.to_string());
+        let assigned_to = assigned_to.map(std::string::ToString::to_string);
 
         self.with_conn(move |conn| {
             let mut sets: Vec<String> = Vec::new();
@@ -458,7 +458,7 @@ impl Database {
 
             params.push(Box::new(id.clone()));
             let param_refs: Vec<&dyn rusqlite::types::ToSql> =
-                params.iter().map(|p| p.as_ref()).collect();
+                params.iter().map(std::convert::AsRef::as_ref).collect();
             let sql = format!(
                 "UPDATE endpoint_api_keys SET {} WHERE id = ?{}",
                 sets.join(", "),
@@ -979,12 +979,12 @@ impl Database {
         limit: u32,
         offset: u32,
     ) -> Result<(Vec<UsageRecordRow>, i64), AppError> {
-        let api_key_id = api_key_id.map(|s| s.to_string());
-        let endpoint_id = endpoint_id.map(|s| s.to_string());
-        let user_id = user_id.map(|s| s.to_string());
-        let key_owner_id = key_owner_id.map(|s| s.to_string());
-        let from = from.map(|s| s.to_string());
-        let to = to.map(|s| s.to_string());
+        let api_key_id = api_key_id.map(std::string::ToString::to_string);
+        let endpoint_id = endpoint_id.map(std::string::ToString::to_string);
+        let user_id = user_id.map(std::string::ToString::to_string);
+        let key_owner_id = key_owner_id.map(std::string::ToString::to_string);
+        let from = from.map(std::string::ToString::to_string);
+        let to = to.map(std::string::ToString::to_string);
 
         self.with_conn(move |conn| {
             let mut conditions = Vec::new();
@@ -1026,7 +1026,7 @@ impl Database {
 
             let count_sql = format!("SELECT COUNT(*) FROM usage_records u {where_clause}");
             let params_refs: Vec<&dyn rusqlite::types::ToSql> =
-                params.iter().map(|p| p.as_ref()).collect();
+                params.iter().map(std::convert::AsRef::as_ref).collect();
             let total: i64 = conn.query_row(&count_sql, params_refs.as_slice(), |r| r.get(0))?;
 
             let data_sql = format!(
@@ -1046,7 +1046,7 @@ impl Database {
             all_params.push(Box::new(limit));
             all_params.push(Box::new(offset));
             let all_refs: Vec<&dyn rusqlite::types::ToSql> =
-                all_params.iter().map(|p| p.as_ref()).collect();
+                all_params.iter().map(std::convert::AsRef::as_ref).collect();
 
             let mut stmt = conn.prepare(&data_sql)?;
             let rows = stmt.query_map(all_refs.as_slice(), |row| {
@@ -1082,10 +1082,10 @@ impl Database {
         from: Option<&str>,
         to: Option<&str>,
     ) -> Result<Vec<TimeSeriesPoint>, AppError> {
-        let user_id = user_id.map(|s| s.to_string());
-        let key_owner_id = key_owner_id.map(|s| s.to_string());
-        let from = from.map(|s| s.to_string());
-        let to = to.map(|s| s.to_string());
+        let user_id = user_id.map(std::string::ToString::to_string);
+        let key_owner_id = key_owner_id.map(std::string::ToString::to_string);
+        let from = from.map(std::string::ToString::to_string);
+        let to = to.map(std::string::ToString::to_string);
 
         let time_expr = match granularity {
             "hour" => "strftime('%Y-%m-%dT%H:00:00', created_at)",
@@ -1132,7 +1132,7 @@ impl Database {
             );
 
             let params_refs: Vec<&dyn rusqlite::types::ToSql> =
-                params.iter().map(|p| p.as_ref()).collect();
+                params.iter().map(std::convert::AsRef::as_ref).collect();
 
             let mut stmt = conn.prepare(&sql)?;
             let rows = stmt.query_map(params_refs.as_slice(), |row| {
@@ -1158,8 +1158,8 @@ impl Database {
         to: Option<&str>,
     ) -> Result<Vec<TimeSeriesBreakdown>, AppError> {
         let user_id = user_id.to_string();
-        let from = from.map(|s| s.to_string());
-        let to = to.map(|s| s.to_string());
+        let from = from.map(std::string::ToString::to_string);
+        let to = to.map(std::string::ToString::to_string);
         let group_by = group_by.to_string();
 
         self.with_conn(move |conn| {
@@ -1199,7 +1199,7 @@ impl Database {
             );
 
             let params_refs: Vec<&dyn rusqlite::types::ToSql> =
-                params.iter().map(|p| p.as_ref()).collect();
+                params.iter().map(std::convert::AsRef::as_ref).collect();
 
             let mut stmt = conn.prepare(&sql)?;
             let rows = stmt.query_map(params_refs.as_slice(), |row| {
@@ -1226,10 +1226,10 @@ impl Database {
         from: Option<&str>,
         to: Option<&str>,
     ) -> Result<Vec<UsageAggregateRow>, AppError> {
-        let key_owner_id = key_owner_id.map(|s| s.to_string());
-        let user_id = user_id.map(|s| s.to_string());
-        let from = from.map(|s| s.to_string());
-        let to = to.map(|s| s.to_string());
+        let key_owner_id = key_owner_id.map(std::string::ToString::to_string);
+        let user_id = user_id.map(std::string::ToString::to_string);
+        let from = from.map(std::string::ToString::to_string);
+        let to = to.map(std::string::ToString::to_string);
 
         let group_col = match group_by {
             "key" => "u.api_key_id",
@@ -1294,7 +1294,7 @@ impl Database {
             };
 
             let params_refs: Vec<&dyn rusqlite::types::ToSql> =
-                params.iter().map(|p| p.as_ref()).collect();
+                params.iter().map(std::convert::AsRef::as_ref).collect();
 
             let mut stmt = conn.prepare(&sql)?;
             let rows = stmt.query_map(params_refs.as_slice(), |row| {
@@ -1338,10 +1338,10 @@ impl Database {
     ) -> Result<SharedUsageSummary, AppError> {
         let key_owner_id = key_owner_id.to_string();
         let from = from
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .unwrap_or_else(|| String::from("2000-01-01"));
         let to = to
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .unwrap_or_else(|| String::from("2099-12-31"));
 
         self.with_conn(move |conn| {
