@@ -160,6 +160,8 @@ fn key_row_from_row(row: &rusqlite::Row) -> rusqlite::Result<EndpointApiKeyRow> 
 // ── User DAO ──────────────────────────────────────────
 
 impl Database {
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn create_user(&self, row: &UserRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let username = row.username.clone();
@@ -178,6 +180,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_user_by_username(&self, username: &str) -> Result<Option<UserRow>, AppError> {
         let username = username.to_string();
         self.with_conn(move |conn| {
@@ -201,6 +205,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_user_by_id(&self, id: &str) -> Result<Option<UserRow>, AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -224,6 +230,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_users(&self) -> Result<Vec<UserRow>, AppError> {
         self.with_conn(move |conn| {
             let mut stmt = conn.prepare(
@@ -247,6 +255,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn count_users(&self) -> Result<i64, AppError> {
         self.with_conn(move |conn| {
             let count: i64 = conn.query_row("SELECT COUNT(*) FROM users", [], |row| row.get(0))?;
@@ -257,6 +267,8 @@ impl Database {
 
     // ── Session DAO ────────────────────────────────────
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn create_session(&self, row: &SessionRow) -> Result<(), AppError> {
         let token = row.token.clone();
         let user_id = row.user_id.clone();
@@ -272,6 +284,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_session(&self, token: &str) -> Result<Option<SessionRow>, AppError> {
         let token = token.to_string();
         self.with_conn(move |conn| {
@@ -291,6 +305,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn delete_session(&self, token: &str) -> Result<(), AppError> {
         let token = token.to_string();
         self.with_conn(move |conn| {
@@ -300,6 +316,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn cleanup_expired_sessions(&self) -> Result<(), AppError> {
         self.with_conn(move |conn| {
             conn.execute(
@@ -313,6 +331,8 @@ impl Database {
 
     // ── Endpoint API Key DAO ───────────────────────────
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn create_api_key(&self, row: &EndpointApiKeyRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let endpoint_id = row.endpoint_id.clone();
@@ -336,6 +356,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_api_keys_for_endpoint(
         &self,
         endpoint_id: &str,
@@ -364,6 +386,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_api_key_by_value(
         &self,
         key_value: &str,
@@ -385,6 +409,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_api_key_by_id(
         &self,
         key_id: &str,
@@ -407,6 +433,8 @@ impl Database {
     }
 
     /// List keys the current user owns OR has been assigned to
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_my_keys(&self, user_id: &str) -> Result<Vec<EndpointApiKeyRow>, AppError> {
         let user_id = user_id.to_string();
         self.with_conn(move |conn| {
@@ -423,6 +451,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn update_api_key(
         &self,
         id: &str,
@@ -470,6 +500,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn delete_api_key(&self, id: &str) -> Result<(), AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -479,6 +511,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn touch_api_key(&self, id: &str) -> Result<(), AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -493,6 +527,8 @@ impl Database {
 
     // ── Endpoint CRUD (with user_id) ────────────────────
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_endpoints(&self) -> Result<Vec<EndpointRow>, AppError> {
         self.with_conn(move |conn| {
             let mut stmt = conn.prepare(
@@ -517,6 +553,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_endpoints_for_user(
         &self,
         user_id: &str,
@@ -545,6 +583,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_endpoint(&self, id: &str) -> Result<Option<EndpointRow>, AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -569,6 +609,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_endpoint_by_path(
         &self,
         listen_path: &str,
@@ -596,6 +638,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn create_endpoint(&self, row: &EndpointRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let user_id = row.user_id.clone();
@@ -615,6 +659,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn update_endpoint(&self, row: &EndpointRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let name = row.name.clone();
@@ -633,6 +679,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn delete_endpoint(&self, id: &str) -> Result<(), AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -644,6 +692,8 @@ impl Database {
 
     // ── Provider CRUD (with user_id) ────────────────────
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_providers(&self) -> Result<Vec<ProviderRow>, AppError> {
         self.with_conn(move |conn| {
             let mut stmt = conn.prepare(
@@ -669,6 +719,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_providers_for_user(
         &self,
         user_id: &str,
@@ -698,6 +750,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_provider(&self, id: &str) -> Result<Option<ProviderRow>, AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -724,6 +778,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn create_provider(&self, row: &ProviderRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let user_id = row.user_id.clone();
@@ -745,6 +801,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn update_provider(&self, row: &ProviderRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let name = row.name.clone();
@@ -765,6 +823,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn delete_provider(&self, id: &str) -> Result<(), AppError> {
         let id = id.to_string();
         self.with_conn(move |conn| {
@@ -776,6 +836,8 @@ impl Database {
 
     // ── Model CRUD ──────────────────────────────────────
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_models_for_provider(
         &self,
         provider_id: &str,
@@ -804,6 +866,8 @@ impl Database {
 
     /// 获取端点可用的所有模型（聚合查询）
     /// 直接返回所有 model，不再依赖 `model_endpoint_visibility`
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_models_for_endpoint(
         &self,
         _endpoint_id: &str,
@@ -834,6 +898,8 @@ impl Database {
     /// 查找提供某个模型的 Provider（按 slug 匹配）
     /// 不再依赖 `model_endpoint_visibility`：model 属于哪个 provider
     /// 是固有关系，不需要再通过 endpoint 二次过滤。
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn find_provider_by_model_slug(
         &self,
         slug: &str,
@@ -868,6 +934,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn create_model(&self, row: &ModelRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let provider_id = row.provider_id.clone();
@@ -887,6 +955,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn delete_models_for_provider(&self, provider_id: &str) -> Result<(), AppError> {
         let provider_id = provider_id.to_string();
         self.with_conn(move |conn| {
@@ -898,6 +968,8 @@ impl Database {
 
     // ── Visibility CRUD ─────────────────────────────────
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn set_model_visibility(
         &self,
         model_id: &str,
@@ -922,6 +994,8 @@ impl Database {
         .await
     }
 
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn get_model_visibility(&self, model_id: &str) -> Result<Vec<String>, AppError> {
         let model_id = model_id.to_string();
         self.with_conn(move |conn| {
@@ -937,6 +1011,8 @@ impl Database {
     // ── Usage Records ──────────────────────────────────────
 
     #[allow(clippy::too_many_arguments)]
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn insert_usage_record(&self, row: &UsageRecordRow) -> Result<(), AppError> {
         let id = row.id.clone();
         let api_key_id = row.api_key_id.clone();
@@ -968,6 +1044,8 @@ impl Database {
 
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::too_many_arguments)]
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn list_usage_records(
         &self,
         api_key_id: Option<&str>,
@@ -1073,6 +1151,8 @@ impl Database {
     }
 
     /// `time_series`, from, to, granularity=day|hour
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn time_series(
         &self,
         user_id: Option<&str>,
@@ -1150,6 +1230,8 @@ impl Database {
     }
 
     /// `time_series_breakdown`: time series grouped by model or key name
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn time_series_breakdown(
         &self,
         user_id: &str,
@@ -1217,6 +1299,8 @@ impl Database {
     }
 
     /// `aggregate_usage`: `group_by=key|model|day|provider`
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn aggregate_usage(
         &self,
         key_owner_id: Option<&str>,
@@ -1330,6 +1414,8 @@ impl Database {
     }
 
     /// Shared usage overview summary
+    /// # Errors
+    /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn shared_usage_summary(
         &self,
         key_owner_id: &str,
