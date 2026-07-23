@@ -103,7 +103,9 @@ pub async fn update_api_key(
     Path((_endpoint_id, key_id)): Path<(String, String)>,
     Json(req): Json<UpdateApiKeyRequest>,
 ) -> Result<Json<EndpointApiKeyRow>, AppError> {
-    // Verify ownership: only admin or key creator/assignee can update
+    // Verify ownership: only admin or key creator/assignee can update.
+    // Assignees can update name/enabled but NOT reassign to another user.
+    let mut is_assignee_only = false;
     if !auth.is_admin {
         let key = db
             .get_api_key_by_id(&key_id)
@@ -112,15 +114,19 @@ pub async fn update_api_key(
         if key.created_by != auth.user_id && key.assigned_to != auth.user_id {
             return Err(AppError::Message("无权修改此 API Key".into()));
         }
+        if key.created_by != auth.user_id && key.assigned_to == auth.user_id {
+            is_assignee_only = true;
+        }
     }
 
-    db.update_api_key(
-        &key_id,
-        req.name.as_deref(),
-        req.enabled,
-        req.assigned_to.as_deref(),
-    )
-    .await?;
+    let assigned_to = if is_assignee_only {
+        None
+    } else {
+        req.assigned_to.as_deref()
+    };
+
+    db.update_api_key(&key_id, req.name.as_deref(), req.enabled, assigned_to)
+        .await?;
 
     // use direct query since get_api_key_by_value is by key_value
     let keys = db
