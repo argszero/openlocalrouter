@@ -10,6 +10,7 @@ use futures::StreamExt;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::fmt::Write;
 
 /// `OpenAI` 流式响应 chunk
 #[derive(Debug, Deserialize)]
@@ -583,7 +584,8 @@ where
                     if !state.initialized && delta_role != Some("assistant") {
                         state.initialized = true;
 
-                        events.push_str(&format!(
+                        let _ = write!(
+                            events,
                             "event: response.created\ndata: {}\n\n",
                             serde_json::to_string(&json!({
                                 "type": "response.created",
@@ -596,9 +598,10 @@ where
                                 }
                             }))
                             .unwrap_or_default()
-                        ));
+                        );
 
-                        events.push_str(&format!(
+                        let _ = write!(
+                            events,
                             "event: response.output_item.added\ndata: {}\n\n",
                             serde_json::to_string(&json!({
                                 "type": "response.output_item.added",
@@ -611,9 +614,10 @@ where
                                 }
                             }))
                             .unwrap_or_default()
-                        ));
+                        );
 
-                        events.push_str(&format!(
+                        let _ = write!(
+                            events,
                             "event: response.content_part.added\ndata: {}\n\n",
                             serde_json::to_string(&json!({
                                 "type": "response.content_part.added",
@@ -623,7 +627,7 @@ where
                                 "part": {"type": "output_text", "text": "", "annotations": []}
                             }))
                             .unwrap_or_default()
-                        ));
+                        );
                     }
 
                     // Content delta
@@ -633,7 +637,8 @@ where
                             .and_then(|c| c.as_str())
                         {
                             if !text.is_empty() {
-                                events.push_str(&format!(
+                                let _ = write!(
+                                    events,
                                     "event: response.output_text.delta\ndata: {}\n\n",
                                     serde_json::to_string(&json!({
                                         "type": "response.output_text.delta",
@@ -643,7 +648,7 @@ where
                                         "delta": text
                                     }))
                                     .unwrap_or_default()
-                                ));
+                                );
                             }
                         }
                     }
@@ -656,7 +661,8 @@ where
                         if !state.initialized {
                             state.initialized = true;
                             // Emit setup events for tool-call response
-                            events.push_str(&format!(
+                            let _ = write!(
+                                events,
                                 "event: response.created\ndata: {}\n\n",
                                 serde_json::to_string(&json!({
                                     "type": "response.created",
@@ -669,7 +675,7 @@ where
                                     }
                                 }))
                                 .unwrap_or_default()
-                            ));
+                            );
                         }
 
                         for tc in tool_calls {
@@ -693,7 +699,8 @@ where
                                 state.tool_output_index += 1;
 
                                 let item_id = format!("fc_{tc_id}");
-                                events.push_str(&format!(
+                                let _ = write!(
+                                    events,
                                     "event: response.output_item.added\ndata: {}\n\n",
                                     serde_json::to_string(&json!({
                                         "type": "response.output_item.added",
@@ -707,12 +714,13 @@ where
                                         }
                                     }))
                                     .unwrap_or_default()
-                                ));
+                                );
                             }
 
                             // Append argument delta
                             let item_id = format!("fc_{tc_id}");
-                            events.push_str(&format!(
+                            let _ = write!(
+                                events,
                                 "event: response.function_call_arguments.delta\ndata: {}\n\n",
                                 serde_json::to_string(&json!({
                                     "type": "response.function_call_arguments.delta",
@@ -721,14 +729,15 @@ where
                                     "delta": tc_args
                                 }))
                                 .unwrap_or_default()
-                            ));
+                            );
                         }
                     }
 
                     // Finish reason → response completed
                     if let Some(fr_val) = finish_reason {
                         if !fr_val.is_empty() {
-                            events.push_str(&format!(
+                            let _ = write!(
+                                events,
                                 "event: response.completed\ndata: {}\n\n",
                                 serde_json::to_string(&json!({
                                     "type": "response.completed",
@@ -741,7 +750,7 @@ where
                                     }
                                 }))
                                 .unwrap_or_default()
-                            ));
+                            );
                         }
                     }
                 }
