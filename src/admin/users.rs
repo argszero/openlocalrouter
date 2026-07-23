@@ -117,13 +117,13 @@ pub async fn update_user(
         if let Some(is_admin) = req.is_admin {
             conn.execute(
                 "UPDATE users SET is_admin=?1 WHERE id=?2",
-                rusqlite::params![is_admin as i32, id2],
+                rusqlite::params![i32::from(is_admin), id2],
             )?;
         }
         if let Some(enabled) = req.enabled {
             conn.execute(
                 "UPDATE users SET enabled=?1 WHERE id=?2",
-                rusqlite::params![enabled as i32, id2],
+                rusqlite::params![i32::from(enabled), id2],
             )?;
         }
         conn.execute(

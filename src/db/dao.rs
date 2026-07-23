@@ -164,8 +164,8 @@ impl Database {
         let id = row.id.clone();
         let username = row.username.clone();
         let password_hash = row.password_hash.clone();
-        let is_admin = row.is_admin as i32;
-        let enabled = row.enabled as i32;
+        let is_admin = i32::from(row.is_admin);
+        let enabled = i32::from(row.enabled);
 
         self.with_conn(move |conn| {
             conn.execute(
@@ -323,7 +323,7 @@ impl Database {
         let key_value = row.key_value.clone();
         let key_hash = row.key_hash.clone();
         let key_prefix = row.key_prefix.clone();
-        let enabled = row.enabled as i32;
+        let enabled = i32::from(row.enabled);
 
         self.with_conn(move |conn| {
             conn.execute(
@@ -432,7 +432,7 @@ impl Database {
     ) -> Result<(), AppError> {
         let id = id.to_string();
         let name = name.map(|s| s.to_string());
-        let enabled = enabled.map(|b| b as i32);
+        let enabled = enabled.map(i32::from);
         let assigned_to = assigned_to.map(|s| s.to_string());
 
         self.with_conn(move |conn| {
@@ -602,7 +602,7 @@ impl Database {
         let name = row.name.clone();
         let listen_path = row.listen_path.clone();
         let protocol = row.protocol.clone();
-        let enabled = row.enabled as i32;
+        let enabled = i32::from(row.enabled);
 
         self.with_conn(move |conn| {
             conn.execute(
@@ -620,7 +620,7 @@ impl Database {
         let name = row.name.clone();
         let listen_path = row.listen_path.clone();
         let protocol = row.protocol.clone();
-        let enabled = row.enabled as i32;
+        let enabled = i32::from(row.enabled);
 
         self.with_conn(move |conn| {
             conn.execute(
@@ -731,7 +731,7 @@ impl Database {
         let base_url = row.base_url.clone();
         let api_key = row.api_key.clone();
         let api_type = row.api_type.clone();
-        let enabled = row.enabled as i32;
+        let enabled = i32::from(row.enabled);
         let extra_config = row.extra_config.clone();
 
         self.with_conn(move |conn| {
@@ -751,7 +751,7 @@ impl Database {
         let base_url = row.base_url.clone();
         let api_key = row.api_key.clone();
         let api_type = row.api_type.clone();
-        let enabled = row.enabled as i32;
+        let enabled = i32::from(row.enabled);
         let extra_config = row.extra_config.clone();
 
         self.with_conn(move |conn| {
