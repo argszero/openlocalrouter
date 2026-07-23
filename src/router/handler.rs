@@ -533,49 +533,44 @@ async fn proxy_request(
         }
     }
 
-    match response {
-        Some(resp) => {
-            let status = StatusCode::from_u16(resp.status().as_u16())
-                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    if let Some(resp) = response {
+        let status = StatusCode::from_u16(resp.status().as_u16())
+            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
 
-            log::debug!("上游响应状态: {status} (target: {upstream_url})");
+        log::debug!("上游响应状态: {status} (target: {upstream_url})");
 
-            if is_stream && status.is_success() {
-                handle_streaming_response(
-                    resp,
-                    needs_transform,
-                    expected_protocol,
-                    forwarding_protocol,
-                    usage_ctx,
-                    &state.db,
-                )
-            } else if needs_transform && status.is_success() {
-                handle_transformed_response(
-                    resp,
-                    status,
-                    expected_protocol,
-                    forwarding_protocol,
-                    usage_ctx,
-                    &state.db,
-                )
-                .await
-            } else {
-                handle_passthrough_response(resp, status, usage_ctx, &state.db).await
-            }
-        }
-        None => {
-            let err_msg = last_error.unwrap_or_else(|| "未知错误".into());
-            log::error!(
-                "上游请求失败（已重试 {MAX_RETRIES} 次）: {err_msg} (target: {upstream_url})"
-            );
-            (
-                StatusCode::BAD_GATEWAY,
-                Json(
-                    serde_json::json!({"error": {"message": format!("上游服务不可用: {err_msg}"), "code": 502}}),
-                ),
+        if is_stream && status.is_success() {
+            handle_streaming_response(
+                resp,
+                needs_transform,
+                expected_protocol,
+                forwarding_protocol,
+                usage_ctx,
+                &state.db,
             )
-                .into_response()
+        } else if needs_transform && status.is_success() {
+            handle_transformed_response(
+                resp,
+                status,
+                expected_protocol,
+                forwarding_protocol,
+                usage_ctx,
+                &state.db,
+            )
+            .await
+        } else {
+            handle_passthrough_response(resp, status, usage_ctx, &state.db).await
         }
+    } else {
+        let err_msg = last_error.unwrap_or_else(|| "未知错误".into());
+        log::error!("上游请求失败（已重试 {MAX_RETRIES} 次）: {err_msg} (target: {upstream_url})");
+        (
+            StatusCode::BAD_GATEWAY,
+            Json(
+                serde_json::json!({"error": {"message": format!("上游服务不可用: {err_msg}"), "code": 502}}),
+            ),
+        )
+            .into_response()
     }
 }
 
@@ -711,12 +706,11 @@ async fn handle_transformed_response(
                 write_usage_record(db, &usage_ctx, &usage).await;
             }
 
-            let v: serde_json::Value = match serde_json::from_slice(&data) {
-                Ok(v) => v,
-                Err(_) => {
-                    log::error!("上游响应JSON解析失败: {}", String::from_utf8_lossy(&data));
-                    return (status, Body::from(data.to_vec())).into_response();
-                }
+            let v: serde_json::Value = if let Ok(v) = serde_json::from_slice(&data) {
+                v
+            } else {
+                log::error!("上游响应JSON解析失败: {}", String::from_utf8_lossy(&data));
+                return (status, Body::from(data.to_vec())).into_response();
             };
 
             log::debug!(

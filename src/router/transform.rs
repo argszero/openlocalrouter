@@ -240,12 +240,11 @@ fn strip_billing_header(text: &str) -> &str {
 
 fn convert_message_to_openai(role: &str, content: Option<&Value>) -> Vec<Value> {
     let mut result = Vec::new();
-    let content = match content {
-        Some(c) => c,
-        None => {
-            result.push(json!({"role": role, "content": null}));
-            return result;
-        }
+    let content = if let Some(c) = content {
+        c
+    } else {
+        result.push(json!({"role": role, "content": null}));
+        return result;
     };
 
     if let Some(text) = content.as_str() {
