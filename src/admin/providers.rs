@@ -70,10 +70,10 @@ fn build_extra_config(
         _ => serde_json::Map::new(),
     };
     if let Some(urls) = api_urls {
-        if !urls.is_empty() {
-            config.insert("api_urls".into(), serde_json::json!(urls));
-        } else {
+        if urls.is_empty() {
             config.remove("api_urls");
+        } else {
+            config.insert("api_urls".into(), serde_json::json!(urls));
         }
     } else {
         config.remove("api_urls");
@@ -266,10 +266,10 @@ pub async fn create_model(
     Json(req): Json<CreateModelRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let extra_config = if let Some(ref ms) = req.model_slug {
-        if ms != &req.slug {
-            serde_json::json!({"model_slug": ms}).to_string()
-        } else {
+        if ms == &req.slug {
             "{}".into()
+        } else {
+            serde_json::json!({"model_slug": ms}).to_string()
         }
     } else {
         "{}".into()

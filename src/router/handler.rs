@@ -548,7 +548,6 @@ async fn proxy_request(
                     usage_ctx,
                     &state.db,
                 )
-                .await
             } else if needs_transform && status.is_success() {
                 handle_transformed_response(
                     resp,
@@ -611,7 +610,7 @@ fn transform_request_body(
 }
 
 /// 处理流式响应（passthrough 或 transform）
-async fn handle_streaming_response(
+fn handle_streaming_response(
     resp: reqwest::Response,
     needs_transform: bool,
     expected_protocol: &str,
