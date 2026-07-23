@@ -1416,6 +1416,7 @@ impl Database {
     /// Shared usage overview summary
     /// # Errors
     /// Returns an [`AppError`] if the underlying database operation fails.
+    #[allow(clippy::cast_precision_loss)]
     pub async fn shared_usage_summary(
         &self,
         key_owner_id: &str,
