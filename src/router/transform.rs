@@ -239,19 +239,17 @@ fn strip_billing_header(text: &str) -> &str {
 
 fn convert_message_to_openai(role: &str, content: Option<&Value>) -> Vec<Value> {
     let mut result = Vec::new();
-    let content = if let Some(c) = content {
-        c
-    } else {
+    let Some(c) = content else {
         result.push(json!({"role": role, "content": null}));
         return result;
     };
 
-    if let Some(text) = content.as_str() {
+    if let Some(text) = c.as_str() {
         result.push(json!({"role": role, "content": text}));
         return result;
     }
 
-    if let Some(blocks) = content.as_array() {
+    if let Some(blocks) = c.as_array() {
         let mut text_parts = String::new();
         let mut content_parts = Vec::new();
         let mut tool_calls = Vec::new();
@@ -333,7 +331,7 @@ fn convert_message_to_openai(role: &str, content: Option<&Value>) -> Vec<Value> 
         return result;
     }
 
-    result.push(json!({"role": role, "content": content}));
+    result.push(json!({"role": role, "content": c}));
     result
 }
 
