@@ -803,7 +803,7 @@ impl Database {
     }
 
     /// 获取端点可用的所有模型（聚合查询）
-    /// 直接返回所有 model，不再依赖 model_endpoint_visibility
+    /// 直接返回所有 model，不再依赖 `model_endpoint_visibility`
     pub async fn list_models_for_endpoint(
         &self,
         _endpoint_id: &str,
@@ -832,7 +832,7 @@ impl Database {
     }
 
     /// 查找提供某个模型的 Provider（按 slug 匹配）
-    /// 不再依赖 model_endpoint_visibility：model 属于哪个 provider
+    /// 不再依赖 `model_endpoint_visibility`：model 属于哪个 provider
     /// 是固有关系，不需要再通过 endpoint 二次过滤。
     pub async fn find_provider_by_model_slug(
         &self,
@@ -1072,7 +1072,7 @@ impl Database {
         .await
     }
 
-    /// time_series, from, to, granularity=day|hour
+    /// `time_series`, from, to, granularity=day|hour
     pub async fn time_series(
         &self,
         user_id: Option<&str>,
@@ -1149,7 +1149,7 @@ impl Database {
         .await
     }
 
-    /// time_series_breakdown: time series grouped by model or key name
+    /// `time_series_breakdown`: time series grouped by model or key name
     pub async fn time_series_breakdown(
         &self,
         user_id: &str,
@@ -1216,7 +1216,7 @@ impl Database {
         .await
     }
 
-    /// aggregate_usage: group_by=key|model|day|provider
+    /// `aggregate_usage`: `group_by=key|model|day|provider`
     pub async fn aggregate_usage(
         &self,
         key_owner_id: Option<&str>,
