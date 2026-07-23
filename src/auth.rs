@@ -16,6 +16,10 @@ use crate::error::AppError;
 const API_KEY_PREFIX: &str = "olr_";
 
 /// 生成 argon2id 密码哈希
+///
+/// # Errors
+///
+/// 如果密码哈希计算失败（如内存不足），返回 `AppError::Message`。
 pub fn hash_password(password: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);
     let hash = Argon2::default()
@@ -26,6 +30,10 @@ pub fn hash_password(password: &str) -> Result<String, AppError> {
 }
 
 /// 验证密码
+///
+/// # Errors
+///
+/// 如果密码哈希格式无效或解析失败，返回 `AppError::Message`。
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
     let parsed =
         PasswordHash::new(hash).map_err(|e| AppError::Message(format!("密码解析失败: {e}")))?;
