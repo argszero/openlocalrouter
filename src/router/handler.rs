@@ -32,6 +32,7 @@ const RETRY_BACKOFF_MS: u64 = 500;
 
 /// 表示已通过 API Key 认证的请求上下文
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_field_names)]
 pub(crate) struct ProxyAuth {
     pub(crate) user_id: String,
     pub(crate) key_owner_id: String,
