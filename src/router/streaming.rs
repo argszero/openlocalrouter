@@ -48,8 +48,7 @@ struct DeltaToolCall {
     #[serde(default)]
     id: Option<String>,
     #[serde(rename = "type", default)]
-    #[allow(dead_code)]
-    call_type: Option<String>,
+    _call_type: Option<String>,
     #[serde(default)]
     function: Option<DeltaFunction>,
 }
