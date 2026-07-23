@@ -133,13 +133,11 @@ pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsa
         input_tokens: usage
             .get("input_tokens")
             .and_then(serde_json::Value::as_u64)
-            .map(|v| u32::try_from(v).unwrap_or(0))
-            .unwrap_or(0),
+            .map_or(0, |v| u32::try_from(v).unwrap_or(0)),
         output_tokens: usage
             .get("output_tokens")
             .and_then(serde_json::Value::as_u64)
-            .map(|v| u32::try_from(v).unwrap_or(0))
-            .unwrap_or(0),
+            .map_or(0, |v| u32::try_from(v).unwrap_or(0)),
         cache_read_tokens: u32::try_from(cached).unwrap_or(0),
     })
 }
