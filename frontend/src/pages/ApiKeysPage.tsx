@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getApiKeys, getEndpoints, getUsers, createApiKey, updateApiKey, deleteApiKey, getKeyUsage } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { toast } from 'sonner'
 import { Plus, Trash2, Copy, Check, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -9,6 +10,7 @@ import { Link } from 'react-router-dom'
 export default function ApiKeysPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const { data: endpoints } = useQuery({ queryKey: ['endpoints'], queryFn: getEndpoints })
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: getUsers })
   const { data: keys, isLoading } = useQuery({ queryKey: ['apiKeys', id], queryFn: () => getApiKeys(id!), enabled: !!id })
@@ -187,7 +189,9 @@ export default function ApiKeysPage() {
               </tr>
             </thead>
             <tbody>
-              {keys.map((k) => (
+              {keys.map((k) => {
+                const isOwner = user?.is_admin || user?.id === k.created_by
+                return (
                 <tr key={k.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-5 py-3 text-sm font-medium text-gray-800">{k.name}</td>
                   <td className="px-5 py-3">
@@ -203,21 +207,29 @@ export default function ApiKeysPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-500">
-                    <select
-                      value={k.assigned_to}
-                      onChange={e => updateMut.mutate({ keyId: k.id, data: { assigned_to: e.target.value } })}
-                      className="px-2 py-1 border border-gray-200 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[140px]"
-                    >
-                      <option value={k.created_by}>{usernameById(k.created_by)}（自己）</option>
-                      {users?.filter(u => u.enabled && u.id !== k.created_by).map(u => (
-                        <option key={u.id} value={u.id}>{u.username}</option>
-                      ))}
-                    </select>
+                    {isOwner ? (
+                      <select
+                        value={k.assigned_to}
+                        onChange={e => updateMut.mutate({ keyId: k.id, data: { assigned_to: e.target.value } })}
+                        className="px-2 py-1 border border-gray-200 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[140px]"
+                      >
+                        <option value={k.created_by}>{usernameById(k.created_by)}（自己）</option>
+                        {users?.filter(u => u.enabled && u.id !== k.created_by).map(u => (
+                          <option key={u.id} value={u.id}>{u.username}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-sm text-gray-500">{usernameById(k.assigned_to)}</span>
+                    )}
                   </td>
                   <td className="px-5 py-3">
-                    <button onClick={() => updateMut.mutate({ keyId: k.id, data: { enabled: !k.enabled } })}>
-                      {k.enabled ? <ToggleRight size={20} className="text-green-500" /> : <ToggleLeft size={20} />}
-                    </button>
+                    {isOwner ? (
+                      <button onClick={() => updateMut.mutate({ keyId: k.id, data: { enabled: !k.enabled } })}>
+                        {k.enabled ? <ToggleRight size={20} className="text-green-500" /> : <ToggleLeft size={20} />}
+                      </button>
+                    ) : (
+                      k.enabled ? <ToggleRight size={20} className="text-green-300" /> : <ToggleLeft size={20} className="text-gray-300" />
+                    )}
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-400">{k.created_at}</td>
                   <td className="px-5 py-3 text-sm text-gray-400">{k.last_used_at || '—'}</td>
@@ -226,16 +238,19 @@ export default function ApiKeysPage() {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex justify-end">
-                      <button
-                        onClick={() => { if (confirm('删除此 Key？')) deleteMut.mutate(k.id) }}
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {isOwner && (
+                        <button
+                          onClick={() => { if (confirm('删除此 Key？')) deleteMut.mutate(k.id) }}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         )}
