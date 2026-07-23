@@ -38,7 +38,6 @@ pub(crate) struct UsageContext {
 /// - `OpenAI Chat`:     `{ "usage": { "prompt_tokens": N, "completion_tokens": N } }`
 /// - `OpenAI Responses`: `{ "usage": { "input_tokens": N, "output_tokens": N } }`
 /// - Anthropic:       `{ "usage": { "input_tokens": N, "output_tokens": N } }`
-#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
     let v: Value = serde_json::from_slice(data).ok()?;
     let usage = v.get("usage")?;
@@ -59,9 +58,9 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
             .unwrap_or(0);
 
         return Some(TokenUsage {
-            input_tokens: prompt.saturating_sub(cached) as u32,
-            output_tokens: completion as u32,
-            cache_read_tokens: cached as u32,
+            input_tokens: u32::try_from(prompt.saturating_sub(cached)).unwrap_or(0),
+            output_tokens: u32::try_from(completion).unwrap_or(0),
+            cache_read_tokens: u32::try_from(cached).unwrap_or(0),
         });
     }
 
@@ -80,9 +79,9 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
             .unwrap_or(0);
 
         return Some(TokenUsage {
-            input_tokens: input as u32,
-            output_tokens: output as u32,
-            cache_read_tokens: cached as u32,
+            input_tokens: u32::try_from(input).unwrap_or(0),
+            output_tokens: u32::try_from(output).unwrap_or(0),
+            cache_read_tokens: u32::try_from(cached).unwrap_or(0),
         });
     }
 
@@ -93,7 +92,6 @@ pub(crate) fn extract_usage_from_body(data: &[u8]) -> Option<TokenUsage> {
 ///
 /// 格式: `{ "usage": { "prompt_tokens": N, "completion_tokens": N, ... } }`
 /// 注意：SSE chunk 可能不是纯 JSON，需要先处理 `data: ` 前缀
-#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
     chunk.get("usage").map(|u| {
         let prompt = u
@@ -111,9 +109,9 @@ pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
             .unwrap_or(0);
 
         TokenUsage {
-            input_tokens: prompt.saturating_sub(cached) as u32,
-            output_tokens: completion as u32,
-            cache_read_tokens: cached as u32,
+            input_tokens: u32::try_from(prompt.saturating_sub(cached)).unwrap_or(0),
+            output_tokens: u32::try_from(completion).unwrap_or(0),
+            cache_read_tokens: u32::try_from(cached).unwrap_or(0),
         }
     })
 }
@@ -121,7 +119,6 @@ pub(crate) fn extract_usage_from_chat_sse(chunk: &Value) -> Option<TokenUsage> {
 /// 从 Anthropic SSE `message_delta` 事件提取 usage
 ///
 /// 格式: `{ "type": "message_delta", "usage": { "input_tokens": N, "output_tokens": N } }`
-#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsage> {
     if chunk.get("type")?.as_str()? != "message_delta" {
         return None;
@@ -136,20 +133,18 @@ pub(crate) fn extract_usage_from_anthropic_sse(chunk: &Value) -> Option<TokenUsa
         input_tokens: usage
             .get("input_tokens")
             .and_then(serde_json::Value::as_u64)
-            .unwrap_or(0) as u32,
+            .map(|v| u32::try_from(v).unwrap_or(0))
+            .unwrap_or(0),
         output_tokens: usage
             .get("output_tokens")
             .and_then(serde_json::Value::as_u64)
-            .unwrap_or(0) as u32,
-        cache_read_tokens: cached as u32,
+            .map(|v| u32::try_from(v).unwrap_or(0))
+            .unwrap_or(0),
+        cache_read_tokens: u32::try_from(cached).unwrap_or(0),
     })
 }
 
-/// 从 `OpenAI Responses` `SSE` `response.completed` 事件提取 usage
-///
-/// 格式: `{ "type": "response.completed", "response": { "usage": { ... } } }`
 #[cfg(test)]
-#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn extract_usage_from_responses_sse(chunk: &Value) -> Option<TokenUsage> {
     if chunk.get("type")?.as_str()? != "response.completed" {
         return None;
@@ -170,9 +165,9 @@ pub(crate) fn extract_usage_from_responses_sse(chunk: &Value) -> Option<TokenUsa
         .unwrap_or(0);
 
     Some(TokenUsage {
-        input_tokens: input as u32,
-        output_tokens: output as u32,
-        cache_read_tokens: cached as u32,
+        input_tokens: u32::try_from(input).unwrap_or(0),
+        output_tokens: u32::try_from(output).unwrap_or(0),
+        cache_read_tokens: u32::try_from(cached).unwrap_or(0),
     })
 }
 
