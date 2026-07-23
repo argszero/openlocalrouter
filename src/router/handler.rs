@@ -138,7 +138,9 @@ pub(crate) async fn extract_endpoint_path(db: &Database, uri: &str) -> Option<St
 /// 从请求 body 中提取模型名
 pub(crate) fn extract_model_from_body(body: &[u8]) -> Option<String> {
     let v: serde_json::Value = serde_json::from_slice(body).ok()?;
-    v.get("model")?.as_str().map(|s| s.to_string())
+    v.get("model")?
+        .as_str()
+        .map(std::string::ToString::to_string)
 }
 
 /// 从 ModelRow 解析实际请求上游的模型名
@@ -148,7 +150,7 @@ fn resolve_upstream_model(model_row: &crate::db::dao::ModelRow) -> String {
         .and_then(|v| {
             v.get("model_slug")
                 .and_then(|s| s.as_str())
-                .map(|s| s.to_string())
+                .map(std::string::ToString::to_string)
         })
         .unwrap_or_else(|| model_row.slug.clone())
 }
@@ -156,7 +158,9 @@ fn resolve_upstream_model(model_row: &crate::db::dao::ModelRow) -> String {
 /// 从请求 body 中提取 stream 标志
 fn is_stream_request(body: &[u8]) -> bool {
     let v: serde_json::Value = serde_json::from_slice(body).unwrap_or_default();
-    v.get("stream").and_then(|s| s.as_bool()).unwrap_or(false)
+    v.get("stream")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
 }
 
 /// GET /models — 聚合模型列表（无需认证）
@@ -349,7 +353,7 @@ async fn proxy_request(
     let supported: Vec<&str> = provider
         .api_type
         .split(',')
-        .map(|s| s.trim())
+        .map(str::trim)
         .filter(|s| !s.is_empty())
         .collect();
 
