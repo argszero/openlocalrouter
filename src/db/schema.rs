@@ -134,8 +134,7 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
             [],
             |row| row.get::<_, i64>(0),
         )
-        .map(|c| c == 0)
-        .unwrap_or(false);
+        .is_ok_and(|c| c == 0);
 
     if need_migrate {
         conn.execute_batch(
@@ -148,18 +147,15 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         let exists: bool = conn
             .query_row(
                 &format!(
-                    "SELECT COUNT(*) FROM pragma_table_info('endpoint_api_keys') WHERE name='{}'",
-                    col
+                    "SELECT COUNT(*) FROM pragma_table_info('endpoint_api_keys') WHERE name='{col}'"
                 ),
                 [],
                 |row| row.get::<_, i64>(0),
             )
-            .map(|c| c > 0)
-            .unwrap_or(false);
+            .is_ok_and(|c| c > 0);
         if !exists {
             conn.execute_batch(&format!(
-                "ALTER TABLE endpoint_api_keys ADD COLUMN {} TEXT NOT NULL DEFAULT '';",
-                col
+                "ALTER TABLE endpoint_api_keys ADD COLUMN {col} TEXT NOT NULL DEFAULT '';"
             ))?;
         }
     }
@@ -187,18 +183,15 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         let exists: bool = conn
             .query_row(
                 &format!(
-                    "SELECT COUNT(*) FROM pragma_table_info('usage_records') WHERE name='{}'",
-                    col
+                    "SELECT COUNT(*) FROM pragma_table_info('usage_records') WHERE name='{col}'"
                 ),
                 [],
                 |row| row.get::<_, i64>(0),
             )
-            .map(|c| c > 0)
-            .unwrap_or(false);
+            .is_ok_and(|c| c > 0);
         if !exists {
             conn.execute_batch(&format!(
-                "ALTER TABLE usage_records ADD COLUMN {} TEXT NOT NULL DEFAULT '';",
-                col
+                "ALTER TABLE usage_records ADD COLUMN {col} TEXT NOT NULL DEFAULT '';"
             ))?;
         }
     }
@@ -254,7 +247,7 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
             SCHEMA_VERSION
         );
     } else {
-        log::info!("数据库已是最新版本 (v{})", SCHEMA_VERSION);
+        log::info!("数据库已是最新版本 (v{SCHEMA_VERSION})");
     }
 
     Ok(())

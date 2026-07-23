@@ -324,9 +324,8 @@ async fn proxy_request(
         .await
         .unwrap_or_default();
     let model_row = models.iter().find(|m| m.slug == raw_model_name);
-    let upstream_model_name = model_row
-        .map(resolve_upstream_model)
-        .unwrap_or_else(|| raw_model_name.clone());
+    let upstream_model_name =
+        model_row.map_or_else(|| raw_model_name.clone(), resolve_upstream_model);
 
     let provider = match state
         .db
@@ -406,8 +405,10 @@ async fn proxy_request(
     let effective_base_url = api_urls
         .as_ref()
         .and_then(|urls| urls.get(forwarding_protocol))
-        .map(|u| u.trim_end_matches('/'))
-        .unwrap_or_else(|| provider.base_url.trim_end_matches('/'));
+        .map_or_else(
+            || provider.base_url.trim_end_matches('/'),
+            |u| u.trim_end_matches('/'),
+        );
 
     let upstream_path = compute_upstream_path(&uri_str, &endpoint_path, forwarding_protocol);
     let upstream_url = format!("{effective_base_url}{upstream_path}");
