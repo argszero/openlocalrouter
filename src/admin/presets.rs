@@ -184,6 +184,42 @@ pub fn get_presets() -> Vec<ProviderPreset> {
             models_hint: None,
         },
         ProviderPreset {
+            name: "阿里云百炼 (Alibaba Bailian)".into(),
+            base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".into(),
+            api_types: vec!["openai_chat".into(), "openai_responses".into()],
+            api_urls: None,
+            icon: "☁️".into(),
+            category: "cloud".into(),
+            description: "阿里云百炼大模型平台，支持 Qwen 系列模型，OpenAI 兼容接口".into(),
+            models_hint: Some(vec![
+                PresetModelHint {
+                    slug: "qwen-max".into(),
+                    display_name: "Qwen-Max".into(),
+                    context_window: Some(131_072),
+                },
+                PresetModelHint {
+                    slug: "qwen-plus".into(),
+                    display_name: "Qwen-Plus".into(),
+                    context_window: Some(131_072),
+                },
+                PresetModelHint {
+                    slug: "qwen-turbo".into(),
+                    display_name: "Qwen-Turbo".into(),
+                    context_window: Some(131_072),
+                },
+                PresetModelHint {
+                    slug: "deepseek-v3".into(),
+                    display_name: "DeepSeek-V3".into(),
+                    context_window: Some(65_536),
+                },
+                PresetModelHint {
+                    slug: "deepseek-r1".into(),
+                    display_name: "DeepSeek-R1".into(),
+                    context_window: Some(65_536),
+                },
+            ]),
+        },
+        ProviderPreset {
             name: "DeepSeek".into(),
             base_url: "https://api.deepseek.com/v1".into(),
             api_types: vec!["openai_chat".into(), "anthropic_messages".into()],
