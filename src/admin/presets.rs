@@ -125,6 +125,37 @@ pub fn get_presets() -> Vec<ProviderPreset> {
             ]),
         },
         ProviderPreset {
+            name: "硅基流动 (SiliconFlow)".into(),
+            base_url: "https://api.siliconflow.cn/v1".into(),
+            api_types: vec!["openai_chat".into()],
+            api_urls: None,
+            icon: "⚡".into(),
+            category: "cloud".into(),
+            description: "硅基流动 SiliconFlow，国产模型推理平台，OpenAI 兼容接口".into(),
+            models_hint: Some(vec![
+                PresetModelHint {
+                    slug: "Qwen/Qwen3-235B-A22B".into(),
+                    display_name: "Qwen3-235B-A22B".into(),
+                    context_window: Some(131_072),
+                },
+                PresetModelHint {
+                    slug: "deepseek-ai/DeepSeek-V3".into(),
+                    display_name: "DeepSeek-V3".into(),
+                    context_window: Some(65_536),
+                },
+                PresetModelHint {
+                    slug: "deepseek-ai/DeepSeek-R1".into(),
+                    display_name: "DeepSeek-R1".into(),
+                    context_window: Some(65_536),
+                },
+                PresetModelHint {
+                    slug: "Pro/Qwen/Qwen3-235B-A22B-Thinking".into(),
+                    display_name: "Qwen3-235B-A22B-Thinking".into(),
+                    context_window: Some(131_072),
+                },
+            ]),
+        },
+        ProviderPreset {
             name: "DeepSeek".into(),
             base_url: "https://api.deepseek.com/v1".into(),
             api_types: vec!["openai_chat".into(), "anthropic_messages".into()],
