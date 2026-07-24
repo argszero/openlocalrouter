@@ -156,6 +156,34 @@ pub fn get_presets() -> Vec<ProviderPreset> {
             ]),
         },
         ProviderPreset {
+            name: "阿里云 TokenPlan".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/v1".into(),
+            api_types: vec![
+                "openai_chat".into(),
+                "openai_responses".into(),
+                "anthropic_messages".into(),
+            ],
+            api_urls: Some(HashMap::from([
+                (
+                    "openai_chat".into(),
+                    "https://token-plan.cn-beijing.maas.aliyuncs.com/v1".into(),
+                ),
+                (
+                    "openai_responses".into(),
+                    "https://token-plan.cn-beijing.maas.aliyuncs.com/v1".into(),
+                ),
+                (
+                    "anthropic_messages".into(),
+                    "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic".into(),
+                ),
+            ])),
+            icon: "☁️".into(),
+            category: "cloud".into(),
+            description: "阿里云 TokenPlan，支持 OpenAI Chat/Responses 和 Anthropic Messages 协议"
+                .into(),
+            models_hint: None,
+        },
+        ProviderPreset {
             name: "阿里云百炼 (Alibaba Bailian)".into(),
             base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".into(),
             api_types: vec!["openai_chat".into(), "openai_responses".into()],
