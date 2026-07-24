@@ -834,7 +834,7 @@ async fn write_usage_record(db: &Database, ctx: &UsageContext, usage: &TokenUsag
         return;
     }
     let row = UsageRecordRow {
-        id: uuid::Uuid::new_v4().to_string(),
+        id: 0,
         api_key_id: ctx.api_key_id.clone(),
         key_owner_id: ctx.key_owner_id.clone(),
         endpoint_id: ctx.endpoint_id.clone(),
@@ -942,7 +942,7 @@ impl futures::Stream for UsageRecordingStream {
                         let usage = usage.clone();
                         tokio::spawn(async move {
                             let row = UsageRecordRow {
-                                id: uuid::Uuid::new_v4().to_string(),
+                                id: 0,
                                 api_key_id: ctx.api_key_id,
                                 key_owner_id: ctx.key_owner_id,
                                 endpoint_id: ctx.endpoint_id,
