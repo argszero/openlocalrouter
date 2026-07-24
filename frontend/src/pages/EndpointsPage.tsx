@@ -16,6 +16,10 @@ export default function EndpointsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState({ name: '', path_prefix: '', protocol: 'openai_chat' })
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPathPrefix, setEditPathPrefix] = useState('')
+  const [editProtocol, setEditProtocol] = useState('openai_chat')
 
   const createMut = useMutation({
     mutationFn: createEndpoint,
@@ -58,6 +62,26 @@ export default function EndpointsPage() {
     setCopiedUrl(text)
     setTimeout(() => setCopiedUrl(null), 2000)
     toast.success('已复制到剪贴板')
+  }
+
+  const startEdit = (ep: Endpoint) => {
+    setEditingId(ep.id)
+    setEditName(ep.name)
+    setEditPathPrefix(ep.listen_path.replace(/^\/u\/[^/]+\//, ''))
+    setEditProtocol(ep.protocol)
+  }
+
+  const saveEdit = (id: string) => {
+    if (!editName.trim()) { toast.error('名称不能为空'); return }
+    updateMut.mutate({
+      id,
+      data: {
+        name: editName.trim(),
+        path_prefix: editPathPrefix.trim(),
+        protocol: editProtocol,
+      },
+    })
+    setEditingId(null)
   }
 
   return (
@@ -145,14 +169,64 @@ export default function EndpointsPage() {
             <tbody>
               {data.map((ep) => (
                 <tr key={ep.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-5 py-3 text-sm font-medium text-gray-800">{ep.name}</td>
-                  <td className="px-5 py-3">
-                    <code className="text-sm text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">{ep.listen_path}</code>
+                  <td className="px-5 py-3 text-sm font-medium text-gray-800">
+                    {editingId === ep.id ? (
+                      <input
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(ep.id); if (e.key === 'Escape') setEditingId(null) }}
+                        className="w-full px-2 py-1 border border-indigo-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="cursor-pointer hover:text-indigo-600" onClick={() => startEdit(ep)} title="点击编辑">
+                        {ep.name}
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-3">
-                    <span className="inline-flex px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 font-mono">
-                      {ep.protocol}
-                    </span>
+                    {editingId === ep.id ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400 font-mono">/u/me/</span>
+                        <input
+                          value={editPathPrefix}
+                          onChange={e => setEditPathPrefix(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveEdit(ep.id); if (e.key === 'Escape') setEditingId(null) }}
+                          className="flex-1 px-2 py-1 border border-indigo-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                      </div>
+                    ) : (
+                      <code className="text-sm text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">{ep.listen_path}</code>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    {editingId === ep.id ? (
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={editProtocol}
+                          onChange={e => setEditProtocol(e.target.value)}
+                          className="px-2 py-1 border border-indigo-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        >
+                          {PROTOCOLS.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                        <button
+                          onClick={() => saveEdit(ep.id)}
+                          className="px-2 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
+                        >
+                          保存
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="px-2 py-1 text-gray-500 text-xs hover:bg-gray-100 rounded"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="inline-flex px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 font-mono">
+                        {ep.protocol}
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-1.5">
