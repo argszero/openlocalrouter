@@ -27,7 +27,11 @@ impl Database {
             std::fs::create_dir_all(parent)?;
         }
         let conn = Connection::open(path)?;
-        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
+        conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             PRAGMA wal_autocheckpoint=256;
+             PRAGMA foreign_keys=ON;",
+        )?;
         schema::run_migrations(&conn)?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
@@ -44,13 +48,13 @@ impl Database {
         f(&conn)
     }
 
-    /// 优雅关闭：WAL checkpoint + 关闭连接
+    /// 优雅关闭：等待所有进行中的操作完成，执行 WAL checkpoint。
     ///
     /// 调用后可安全丢弃此 `Database` 实例。
     pub async fn close(&self) {
-        if let Ok(conn) = self.conn.try_lock() {
-            let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
-            // Connection dropped when Arc's last ref goes away
-        }
+        // Wait for any in-flight operations to finish, then checkpoint
+        let conn = self.conn.lock().await;
+        let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+        log::info!("WAL checkpoint 完成");
     }
 }

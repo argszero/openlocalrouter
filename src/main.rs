@@ -46,12 +46,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let handle = run_backend(config, db.clone()).await;
 
+    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        .expect("无法注册 SIGTERM handler");
+    let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+        .expect("无法注册 SIGINT handler");
+
     tokio::select! {
         _ = handle => {},
-        _ = tokio::signal::ctrl_c() => {
+        _ = sigterm.recv() => {
+            log::info!("收到 SIGTERM，正在优雅关闭…");
+        }
+        _ = sigint.recv() => {
             log::info!("收到 SIGINT，正在优雅关闭…");
-            db.close().await;
         }
     }
+    db.close().await;
+    log::info!("服务已安全停止");
     Ok(())
 }
