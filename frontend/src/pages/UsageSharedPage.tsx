@@ -15,7 +15,7 @@ export default function UsageSharedPage() {
   const limit = 25
 
   const { data: summary } = useQuery({ queryKey: ['sharedSummary', dateFrom, dateTo], queryFn: () => getSharedSummary(dateFrom, dateTo), refetchInterval: 30000 })
-  const { data: topCustomers } = useQuery({ queryKey: ['sharedTopCust', dateFrom, dateTo], queryFn: () => getSharedTop('customer', dateFrom, dateTo), refetchInterval: 30000 })
+  const { data: topCustomers } = useQuery({ queryKey: ['sharedTopCust', dateFrom, dateTo], queryFn: () => getSharedTop('key', dateFrom, dateTo), refetchInterval: 30000 })
   const { data: topModels } = useQuery({ queryKey: ['sharedTopModel', dateFrom, dateTo], queryFn: () => getSharedTop('model', dateFrom, dateTo), refetchInterval: 30000 })
   const { data: keysData } = useQuery({ queryKey: ['sharedKeys'], queryFn: getSharedKeys, refetchInterval: 30000 })
   const { data: records, isLoading } = useQuery({ queryKey: ['sharedRecords', page, dateFrom, dateTo], queryFn: () => getSharedRecords({ from: dateFrom, to: dateTo, limit, offset: page * limit }), refetchInterval: 30000 })
