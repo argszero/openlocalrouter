@@ -122,7 +122,7 @@ Auth via zustand store. API client attaches Bearer session token, redirects to `
 
 ## Code Style
 
-- Rust edition 2021, MSRV 1.85.0
+- Rust edition 2021, MSRV 1.86.0
 - `rustfmt.toml`: max_width=100, tab_spaces=4
 - All DB access through `Database::with_conn()` — never lock mutex directly outside `db/mod.rs`
 - Error type: `AppError` in `src/error.rs` — `?` works with `rusqlite::Error` and `std::io::Error` via `#[from]`
