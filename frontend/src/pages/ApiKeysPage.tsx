@@ -21,6 +21,8 @@ export default function ApiKeysPage() {
   const [newKey, setNewKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [usageMap, setUsageMap] = useState<Record<string, number>>({})
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
 
   // Load monthly usage for each key
   useQuery({
@@ -83,6 +85,12 @@ export default function ApiKeysPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   })
+
+  const handleSaveName = (keyId: string) => {
+    if (!editingName.trim()) { toast.error('名称不能为空'); return }
+    updateMut.mutate({ keyId, data: { name: editingName.trim() } })
+    setEditingKeyId(null)
+  }
 
   const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text)
@@ -193,7 +201,26 @@ export default function ApiKeysPage() {
                 const isOwner = user?.is_admin || user?.id === k.created_by
                 return (
                 <tr key={k.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-5 py-3 text-sm font-medium text-gray-800">{k.name}</td>
+                  <td className="px-5 py-3 text-sm font-medium text-gray-800">
+                    {editingKeyId === k.id ? (
+                      <input
+                        value={editingName}
+                        onChange={e => setEditingName(e.target.value)}
+                        onBlur={() => handleSaveName(k.id)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveName(k.id); if (e.key === 'Escape') setEditingKeyId(null) }}
+                        className="w-full px-2 py-1 border border-indigo-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        className="cursor-pointer hover:text-indigo-600 transition-colors"
+                        onClick={() => { if (isOwner) { setEditingKeyId(k.id); setEditingName(k.name) } }}
+                        title={isOwner ? '点击编辑名称' : undefined}
+                      >
+                        {k.name}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <code className="text-sm text-gray-400 font-mono">{k.key_prefix}</code>
