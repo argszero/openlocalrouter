@@ -85,7 +85,7 @@ pub struct EndpointApiKeyRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UsageRecordRow {
-    pub id: String,
+    pub id: i64,
     pub api_key_id: String,
     pub key_owner_id: String,
     pub endpoint_id: String,
@@ -1014,7 +1014,6 @@ impl Database {
     /// # Errors
     /// Returns an [`AppError`] if the underlying database operation fails.
     pub async fn insert_usage_record(&self, row: &UsageRecordRow) -> Result<(), AppError> {
-        let id = row.id.clone();
         let api_key_id = row.api_key_id.clone();
         let key_owner_id = row.key_owner_id.clone();
         let endpoint_id = row.endpoint_id.clone();
@@ -1028,11 +1027,11 @@ impl Database {
 
         self.with_conn(move |conn| {
             conn.execute(
-                "INSERT INTO usage_records (id, api_key_id, key_owner_id, endpoint_id, user_id, provider_id, provider_name, model,
+                "INSERT INTO usage_records (api_key_id, key_owner_id, endpoint_id, user_id, provider_id, provider_name, model,
                  input_tokens, output_tokens, cache_read_tokens)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
                 rusqlite::params![
-                    id, api_key_id, key_owner_id, endpoint_id, user_id,
+                    api_key_id, key_owner_id, endpoint_id, user_id,
                     provider_id, provider_name, model,
                     input_tokens, output_tokens, cache_read_tokens,
                 ],

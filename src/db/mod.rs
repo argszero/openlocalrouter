@@ -43,4 +43,14 @@ impl Database {
         let conn = self.conn.lock().await;
         f(&conn)
     }
+
+    /// 优雅关闭：WAL checkpoint + 关闭连接
+    ///
+    /// 调用后可安全丢弃此 `Database` 实例。
+    pub async fn close(&self) {
+        if let Ok(conn) = self.conn.try_lock() {
+            let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+            // Connection dropped when Arc's last ref goes away
+        }
+    }
 }

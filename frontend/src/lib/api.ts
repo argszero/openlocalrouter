@@ -129,7 +129,7 @@ export const getPresets = () => request<ProviderPreset[]>('/presets')
 
 // ── My Usage ─────────────────────────────────────────
 export interface UsageRecord {
-  id: string; api_key_id: string; key_owner_id: string
+  id: number; api_key_id: string; key_owner_id: string
   endpoint_id: string; user_id: string
   provider_id: string; provider_name: string; model: string
   input_tokens: number; output_tokens: number; cache_read_tokens: number

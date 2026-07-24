@@ -44,8 +44,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     log::info!("数据库已就绪: {}", db_path.display());
 
-    let handle = run_backend(config, db).await;
+    let handle = run_backend(config, db.clone()).await;
 
-    handle.await?;
+    tokio::select! {
+        _ = handle => {},
+        _ = tokio::signal::ctrl_c() => {
+            log::info!("收到 SIGINT，正在优雅关闭…");
+            db.close().await;
+        }
+    }
     Ok(())
 }

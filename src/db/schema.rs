@@ -3,7 +3,7 @@ use rusqlite::Connection;
 use crate::error::AppError;
 
 /// Current schema version — bump when adding new migrations below
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
     log::info!("检查数据库迁移…");
@@ -96,7 +96,7 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         );
 
         CREATE TABLE IF NOT EXISTS usage_records (
-            id              TEXT PRIMARY KEY,
+            id              INTEGER PRIMARY KEY,
             api_key_id      TEXT NOT NULL REFERENCES endpoint_api_keys(id),
             key_owner_id    TEXT NOT NULL DEFAULT '',
             endpoint_id     TEXT NOT NULL REFERENCES endpoints(id),
@@ -228,6 +228,53 @@ pub fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "UPDATE usage_records SET created_at = datetime('now') WHERE created_at = '' OR created_at IS NULL",
             [],
+        )?;
+    }
+
+    // 5. usage_records: migrate id from TEXT (UUID) to INTEGER PRIMARY KEY
+    //    INTEGER PRIMARY KEY = alias for rowid, sequential inserts avoid
+    //    random B-tree page splits that corrupt on hard-kill.
+    let id_is_text: bool = conn
+        .query_row(
+            "SELECT type FROM pragma_table_info('usage_records') WHERE name='id'",
+            [],
+            |row| {
+                let t: String = row.get(0)?;
+                Ok(t.to_uppercase() == "TEXT")
+            },
+        )
+        .unwrap_or(false);
+
+    if id_is_text {
+        log::info!("迁移: usage_records.id TEXT → INTEGER PRIMARY KEY");
+        conn.execute_batch(
+            "CREATE TABLE usage_records_new (
+                id              INTEGER PRIMARY KEY,
+                api_key_id      TEXT NOT NULL REFERENCES endpoint_api_keys(id),
+                key_owner_id    TEXT NOT NULL DEFAULT '',
+                endpoint_id     TEXT NOT NULL REFERENCES endpoints(id),
+                user_id         TEXT NOT NULL REFERENCES users(id),
+                provider_id     TEXT NOT NULL DEFAULT '',
+                provider_name   TEXT NOT NULL DEFAULT '',
+                model           TEXT NOT NULL,
+                input_tokens    INTEGER NOT NULL DEFAULT 0,
+                output_tokens   INTEGER NOT NULL DEFAULT 0,
+                cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+                created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            INSERT INTO usage_records_new (api_key_id, key_owner_id, endpoint_id, user_id,
+                provider_id, provider_name, model, input_tokens, output_tokens,
+                cache_read_tokens, created_at)
+            SELECT api_key_id, key_owner_id, endpoint_id, user_id,
+                provider_id, provider_name, model, input_tokens, output_tokens,
+                cache_read_tokens, created_at
+            FROM usage_records;
+            DROP TABLE usage_records;
+            ALTER TABLE usage_records_new RENAME TO usage_records;
+            CREATE INDEX IF NOT EXISTS idx_usage_user ON usage_records(user_id);
+            CREATE INDEX IF NOT EXISTS idx_usage_api_key ON usage_records(api_key_id);
+            CREATE INDEX IF NOT EXISTS idx_usage_created ON usage_records(created_at);
+            CREATE INDEX IF NOT EXISTS idx_usage_endpoint ON usage_records(endpoint_id);",
         )?;
     }
 
