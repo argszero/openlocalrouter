@@ -4,7 +4,7 @@ import { getUsers, createUser, updateUser, deleteUser } from '../lib/api'
 import type { User } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { toast } from 'sonner'
-import { Plus, Trash2, ToggleLeft, ToggleRight, Shield, UserIcon, Key } from 'lucide-react'
+import { Plus, Trash2, ToggleLeft, ToggleRight, Shield, UserIcon, Key, Pencil, Check, X } from 'lucide-react'
 
 export default function UsersPage() {
   const queryClient = useQueryClient()
@@ -14,6 +14,10 @@ export default function UsersPage() {
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
   const [form, setForm] = useState({ username: '', password: '', is_admin: false })
+  const [editingUser, setEditingUser] = useState<string | null>(null)
+  const [editingUsername, setEditingUsername] = useState('')
+  const [resettingPw, setResettingPw] = useState<string | null>(null)
+  const [newUserPw, setNewUserPw] = useState('')
 
   const createMut = useMutation({
     mutationFn: createUser,
@@ -60,6 +64,19 @@ export default function UsersPage() {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) { toast.error('两次密码不一致'); return }
     if (!currentUser) return
     passwordMut.mutate({ id: currentUser.id, password: passwordForm.newPassword })
+  }
+
+  const handleSaveUsername = (id: string) => {
+    if (!editingUsername.trim()) { toast.error('用户名不能为空'); return }
+    updateMut.mutate({ id, data: { username: editingUsername.trim() } })
+    setEditingUser(null)
+  }
+
+  const handleResetPassword = (id: string) => {
+    if (!newUserPw) { toast.error('请输入新密码'); return }
+    updateMut.mutate({ id, data: { password: newUserPw } })
+    setResettingPw(null)
+    setNewUserPw('')
   }
 
   return (
@@ -139,9 +156,32 @@ export default function UsersPage() {
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
                         {u.username[0]?.toUpperCase()}
                       </div>
-                      <span className="text-sm font-medium text-gray-800">{u.username}</span>
+                      {editingUser === u.id ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            value={editingUsername}
+                            onChange={e => setEditingUsername(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleSaveUsername(u.id); if (e.key === 'Escape') setEditingUser(null) }}
+                            className="px-2 py-1 border border-indigo-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 w-32"
+                            autoFocus
+                          />
+                          <button onClick={() => handleSaveUsername(u.id)} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check size={14} /></button>
+                          <button onClick={() => setEditingUser(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded"><X size={14} /></button>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-medium text-gray-800">{u.username}</span>
+                      )}
                       {u.id === currentUser?.id && (
                         <span className="text-xs text-indigo-500">(你)</span>
+                      )}
+                      {currentUser?.is_admin && u.id !== currentUser?.id && editingUser !== u.id && (
+                        <button
+                          onClick={() => { setEditingUser(u.id); setEditingUsername(u.username) }}
+                          className="p-0.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded"
+                          title="编辑用户名"
+                        >
+                          <Pencil size={12} />
+                        </button>
                       )}
                     </div>
                   </td>
@@ -164,14 +204,39 @@ export default function UsersPage() {
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-400">{u.created_at}</td>
                   <td className="px-5 py-3">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end items-center gap-1">
                       {currentUser?.is_admin && u.id !== currentUser.id && (
-                        <button
-                          onClick={() => { if (confirm('删除用户？')) deleteMut.mutate(u.id) }}
-                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <>
+                          {resettingPw === u.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="password"
+                                placeholder="新密码"
+                                value={newUserPw}
+                                onChange={e => setNewUserPw(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleResetPassword(u.id); if (e.key === 'Escape') { setResettingPw(null); setNewUserPw('') } }}
+                                className="w-24 px-2 py-1 border border-indigo-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                autoFocus
+                              />
+                              <button onClick={() => handleResetPassword(u.id)} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check size={14} /></button>
+                              <button onClick={() => { setResettingPw(null); setNewUserPw('') }} className="p-1 text-gray-400 hover:bg-gray-100 rounded"><X size={14} /></button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setResettingPw(u.id)}
+                              className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                              title="重置密码"
+                            >
+                              <Key size={16} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => { if (confirm('删除用户？')) deleteMut.mutate(u.id) }}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
