@@ -1,6 +1,6 @@
 [package]
 name = "openlocalrouter"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 description = "OpenLocalRouter — 协议无关的本地 AI API 路由网关 (桌面版)"
 license = "MIT"
