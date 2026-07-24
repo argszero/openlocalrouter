@@ -4,13 +4,15 @@ import { getUsers, createUser, updateUser, deleteUser } from '../lib/api'
 import type { User } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { toast } from 'sonner'
-import { Plus, Trash2, ToggleLeft, ToggleRight, Shield, UserIcon } from 'lucide-react'
+import { Plus, Trash2, ToggleLeft, ToggleRight, Shield, UserIcon, Key } from 'lucide-react'
 
 export default function UsersPage() {
   const queryClient = useQueryClient()
   const { user: currentUser } = useAuth()
   const { data: users, isLoading } = useQuery({ queryKey: ['users'], queryFn: getUsers })
   const [showCreate, setShowCreate] = useState(false)
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
   const [form, setForm] = useState({ username: '', password: '', is_admin: false })
 
   const createMut = useMutation({
@@ -41,6 +43,24 @@ export default function UsersPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   })
+
+  const passwordMut = useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) => updateUser(id, { password }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      toast.success('密码已修改')
+      setShowPasswordChange(false)
+      setPasswordForm({ newPassword: '', confirmPassword: '' })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const handleChangePassword = () => {
+    if (!passwordForm.newPassword) { toast.error('请输入新密码'); return }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) { toast.error('两次密码不一致'); return }
+    if (!currentUser) return
+    passwordMut.mutate({ id: currentUser.id, password: passwordForm.newPassword })
+  }
 
   return (
     <div>
@@ -159,6 +179,52 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      {/* Change Password */}
+      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">修改密码</h3>
+          {!showPasswordChange && (
+            <button
+              onClick={() => setShowPasswordChange(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+            >
+              <Key size={14} /> 修改密码
+            </button>
+          )}
+        </div>
+        {showPasswordChange && (
+          <div className="mt-3 flex flex-wrap gap-3">
+            <input
+              type="password"
+              placeholder="新密码"
+              value={passwordForm.newPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <input
+              type="password"
+              placeholder="确认密码"
+              value={passwordForm.confirmPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={handleChangePassword}
+              disabled={passwordMut.isPending}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {passwordMut.isPending ? '修改中…' : '确认修改'}
+            </button>
+            <button
+              onClick={() => { setShowPasswordChange(false); setPasswordForm({ newPassword: '', confirmPassword: '' }) }}
+              className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg"
+            >
+              取消
+            </button>
+          </div>
         )}
       </div>
     </div>
