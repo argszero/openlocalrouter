@@ -21,7 +21,7 @@ cargo run
 # Build Tauri desktop bundle (macOS .app)
 cargo build -p openlocalrouter --release
 
-# Tests (9 tests currently)
+# Tests (20 tests currently)
 cargo test
 cargo test -- --test-threads=1          # serial tests (SQLite)
 
