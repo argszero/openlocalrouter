@@ -354,10 +354,11 @@ async fn proxy_request(
     }
 
     // 6. 决定转发协议和是否需要转换
-    let forwarding_protocol = match determine_forwarding_protocol(&supported, expected_protocol, &provider.name) {
-        Ok(p) => p,
-        Err((status, json)) => return (status, json).into_response(),
-    };
+    let forwarding_protocol =
+        match determine_forwarding_protocol(&supported, expected_protocol, &provider.name) {
+            Ok(p) => p,
+            Err((status, json)) => return (status, json).into_response(),
+        };
 
     // 是否需要协议转换
     let needs_transform = forwarding_protocol != expected_protocol;
@@ -816,10 +817,7 @@ fn build_upstream_url(
 }
 
 /// 构建转发请求头：从客户端 headers 复制并替换 Authorization 为 Provider 的 API Key。
-fn build_forwarding_headers(
-    headers: &HeaderMap,
-    api_key: &str,
-) -> reqwest::header::HeaderMap {
+fn build_forwarding_headers(headers: &HeaderMap, api_key: &str) -> reqwest::header::HeaderMap {
     let mut fwd_headers = reqwest::header::HeaderMap::new();
     for (k, v) in headers {
         let k_str = match std::str::from_utf8(k.as_str().as_bytes()) {
