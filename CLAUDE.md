@@ -22,8 +22,8 @@ cargo run
 cargo build -p openlocalrouter --release
 
 # Tests (20 tests currently)
-cargo test --tests
-cargo test --tests -- --test-threads=1   # serial tests (SQLite)
+cargo test --lib
+cargo test --lib -- --test-threads=1   # serial tests (SQLite)
 
 # Lint
 cargo clippy -- -D warnings
