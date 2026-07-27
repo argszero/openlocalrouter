@@ -11,20 +11,39 @@
 
 ---
 
+## 为什么需要 OpenLocalRouter
+
+AI 时代，每个开发者都在用 AI 编程助手。但中小企业面临一个现实困境：
+
+> **不可能也不应该给每个员工购买每个模型的 API Key。**
+
+每个模型的 API Key 都绑定信用卡、都有月度限额、都无法按员工拆分用量。更糟的是，一旦 Key 泄漏，财务损失不可控。
+
+**OpenLocalRouter 解决的，正是这个问题。**
+
 ## 这是什么
 
-OpenLocalRouter 是一个 **AI API 路由网关**，专注两件事：
+OpenLocalRouter 是一个 **AI API 路由网关**，在你和 AI Provider 之间架起一座桥：
 
-1. **聚合路由** — 多 Provider、多协议的模型统一聚合到一个端点，自动协议转换
-2. **API Key 分发与用量管理** — 为团队成员分发独立的 API Key，追踪每个 Key 的用量
+```
+员工 → API Key (OLR 分发) → OLR 网关 → 上游 Provider (API Key 由管理员统一管理)
+                ↑                              ↑
+        每人一个廉价 Key                真实 Key 对员工透明
+```
 
-你可以把它跑在本机，也可以部署在服务器上供团队使用。核心价值在路由层和 Key 管理层，不绑定任何特定 AI 工具。
+核心能力：
+
+1. **API Key 分发** — 管理员统一购买上游 API 额度，通过 OLR 给每个员工发一个中间 Key。员工的 Key 可以随时撤销、限额、追踪用量。上游 Key 永不泄漏。
+2. **多 Provider 聚合路由** — OpenAI、Anthropic、DeepSeek、硅基流动、阿里百炼……不管接了多少家，对外都统一成一个端点。自动协议转换，员工不用关心底层是哪家 Provider。
+3. **统一用量追踪** — 谁用了多少 Token？哪个模型最费钱？一目了然。
+
+你可以把它跑在本机（个人使用），也可以部署在服务器上供团队使用。
 
 ## 两种使用场景
 
 **场景 1 — 本机使用**：你有多个 API Provider（官方、中转站、自建），想把它们聚合到一起。配合 [CC Switch](https://github.com/farion1231/cc-switch) 使用效果更佳 — CC Switch 负责 Codex 集成和 Provider 发现，OLR 负责路由和转换。
 
-**场景 2 — 服务器部署**：团队有多个 Provider，你在服务器上部署 OLR，给每个成员发一个 API Key。统一管理上游 Provider 的 API Key 不泄漏给成员，追踪每个成员的用量。
+**场景 2 — 团队/企业部署**：公司统一购买了一套 API 额度（多个 Provider），部署 OLR 给每个员工分配独立的 API Key。员工像用普通 API 一样使用，管理员统一管理上游 Key 和追踪用量。无需给每个员工开 Provider 账号，不用担心 Key 泄漏，财务透明可控。
 
 ## 与 CC Switch 的关系
 
