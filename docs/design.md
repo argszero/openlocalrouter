@@ -4,6 +4,8 @@
 
 ---
 
+[English Version](design_EN.md) | 中文版
+
 ## 目录
 
 1. [愿景与范围](#1-愿景与范围)
