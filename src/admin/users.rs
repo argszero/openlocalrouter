@@ -134,8 +134,6 @@ pub async fn update_user(
     })
     .await?;
 
-    let _updated = db.get_user_by_id(&id).await?.unwrap();
-
     let updated = db.get_user_by_id(&id).await?.unwrap();
     Ok(Json(updated.into()))
 }
