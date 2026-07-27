@@ -16,7 +16,7 @@ build-frontend:
 	cd frontend && npm install && npm run build
 
 test:
-	cargo test
+	cargo test --lib
 
 lint:
 	cargo clippy -- -D warnings
