@@ -354,53 +354,16 @@ async fn proxy_request(
     }
 
     // 6. 决定转发协议和是否需要转换
-    let forwarding_protocol = if supported.contains(&expected_protocol) {
-        // 直接匹配 — 同协议直通
-        expected_protocol
-    } else if expected_protocol == "openai_chat" && supported.contains(&"anthropic_messages") {
-        // Anthropic → OpenAI Chat: 需要转换请求+响应
-        "anthropic_messages"
-    } else if expected_protocol == "anthropic_messages" && supported.contains(&"openai_chat") {
-        // OpenAI Chat → Anthropic: 需要转换请求+响应
-        "openai_chat"
-    } else if expected_protocol == "openai_responses" && supported.contains(&"openai_chat") {
-        // OpenAI Responses → Chat: 降级到 Chat Completions
-        "openai_chat"
-    } else if expected_protocol == "openai_responses" && supported.contains(&"anthropic_messages") {
-        // OpenAI Responses → Anthropic: 降级到 Anthropic Messages
-        "anthropic_messages"
-    } else {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(
-                serde_json::json!({
-                    "error": {"message": format!("Provider {} 不支持 {expected_protocol} 协议", provider.name), "code": 400}
-                }),
-            ),
-        )
-            .into_response();
+    let forwarding_protocol = match determine_forwarding_protocol(&supported, expected_protocol, &provider.name) {
+        Ok(p) => p,
+        Err((status, json)) => return (status, json).into_response(),
     };
 
     // 是否需要协议转换
     let needs_transform = forwarding_protocol != expected_protocol;
 
-    // 7. 计算上游 URL — 先从 api_urls 查找，fallback 到 base_url
-    let api_urls: Option<std::collections::HashMap<String, String>> =
-        serde_json::from_str(&provider.extra_config)
-            .ok()
-            .and_then(|v: serde_json::Value| v.get("api_urls").cloned())
-            .and_then(|u| serde_json::from_value(u).ok());
-
-    let effective_base_url = api_urls
-        .as_ref()
-        .and_then(|urls| urls.get(forwarding_protocol))
-        .map_or_else(
-            || provider.base_url.trim_end_matches('/'),
-            |u| u.trim_end_matches('/'),
-        );
-
-    let upstream_path = compute_upstream_path(&uri_str, &endpoint_path, forwarding_protocol);
-    let upstream_url = format!("{effective_base_url}{upstream_path}");
+    // 7. 计算上游 URL
+    let upstream_url = build_upstream_url(&provider, forwarding_protocol, &uri_str, &endpoint_path);
 
     log::info!(
         "代理: {} -> {} (provider: {}, model: {}, protocol: {}→{}, transform: {})",
@@ -434,42 +397,7 @@ async fn proxy_request(
     let is_stream = is_stream_request(&upstream_body);
 
     // 9. 构建转发 headers
-    let mut fwd_headers = reqwest::header::HeaderMap::new();
-    for (k, v) in &headers {
-        let k_str = match std::str::from_utf8(k.as_str().as_bytes()) {
-            Ok(s) => s.to_string(),
-            Err(_) => continue,
-        };
-        if matches!(
-            k_str.to_lowercase().as_str(),
-            "host" | "connection" | "transfer-encoding" | "content-length"
-        ) {
-            continue;
-        }
-        if k_str.to_lowercase() == "authorization" {
-            fwd_headers.insert(
-                reqwest::header::AUTHORIZATION,
-                reqwest::header::HeaderValue::from_str(&format!("Bearer {}", provider.api_key))
-                    .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static("")),
-            );
-        } else if let (Ok(name), Ok(value)) = (
-            reqwest::header::HeaderName::from_bytes(k_str.as_bytes()),
-            reqwest::header::HeaderValue::from_bytes(v.as_bytes()),
-        ) {
-            fwd_headers.insert(name, value);
-        }
-    }
-
-    if !headers.contains_key("Authorization")
-        && !headers.contains_key("authorization")
-        && !provider.api_key.is_empty()
-    {
-        fwd_headers.insert(
-            reqwest::header::AUTHORIZATION,
-            reqwest::header::HeaderValue::from_str(&format!("Bearer {}", provider.api_key))
-                .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static("")),
-        );
-    }
+    let fwd_headers = build_forwarding_headers(&headers, &provider.api_key);
 
     // 10. 发起请求（带重试）
     let client = reqwest::Client::builder()
@@ -826,6 +754,110 @@ fn compute_upstream_path(full_uri: &str, listen_path: &str, protocol: &str) -> S
     };
 
     format!("{upstream_path}{query}")
+}
+
+/// 决定转发协议：根据 Provider 支持的协议和客户端请求的协议，选择最佳转发协议。
+///
+/// 匹配优先级：同协议直通 > Anthropic↔OpenAI Chat 互转 > OpenAI Responses 降级。
+fn determine_forwarding_protocol<'a>(
+    supported: &[&str],
+    expected_protocol: &'a str,
+    provider_name: &str,
+) -> Result<&'a str, (StatusCode, Json<serde_json::Value>)> {
+    if supported.contains(&expected_protocol) {
+        return Ok(expected_protocol);
+    }
+    if expected_protocol == "openai_chat" && supported.contains(&"anthropic_messages") {
+        return Ok("anthropic_messages");
+    }
+    if expected_protocol == "anthropic_messages" && supported.contains(&"openai_chat") {
+        return Ok("openai_chat");
+    }
+    if expected_protocol == "openai_responses" && supported.contains(&"openai_chat") {
+        return Ok("openai_chat");
+    }
+    if expected_protocol == "openai_responses" && supported.contains(&"anthropic_messages") {
+        return Ok("anthropic_messages");
+    }
+    Err((
+        StatusCode::BAD_REQUEST,
+        Json(serde_json::json!({
+            "error": {
+                "message": format!("Provider {provider_name} 不支持 {expected_protocol} 协议"),
+                "code": 400
+            }
+        })),
+    ))
+}
+
+/// 构建上游请求 URL：从 Provider 的 api_urls/extra_config 查找协议对应 URL，fallback 到 base_url。
+fn build_upstream_url(
+    provider: &crate::db::dao::ProviderRow,
+    forwarding_protocol: &str,
+    uri_str: &str,
+    endpoint_path: &str,
+) -> String {
+    let api_urls: Option<std::collections::HashMap<String, String>> =
+        serde_json::from_str(&provider.extra_config)
+            .ok()
+            .and_then(|v: serde_json::Value| v.get("api_urls").cloned())
+            .and_then(|u| serde_json::from_value(u).ok());
+
+    let effective_base_url = api_urls
+        .as_ref()
+        .and_then(|urls| urls.get(forwarding_protocol))
+        .map_or_else(
+            || provider.base_url.trim_end_matches('/'),
+            |u| u.trim_end_matches('/'),
+        );
+
+    let upstream_path = compute_upstream_path(uri_str, endpoint_path, forwarding_protocol);
+    format!("{effective_base_url}{upstream_path}")
+}
+
+/// 构建转发请求头：从客户端 headers 复制并替换 Authorization 为 Provider 的 API Key。
+fn build_forwarding_headers(
+    headers: &HeaderMap,
+    api_key: &str,
+) -> reqwest::header::HeaderMap {
+    let mut fwd_headers = reqwest::header::HeaderMap::new();
+    for (k, v) in headers {
+        let k_str = match std::str::from_utf8(k.as_str().as_bytes()) {
+            Ok(s) => s.to_string(),
+            Err(_) => continue,
+        };
+        if matches!(
+            k_str.to_lowercase().as_str(),
+            "host" | "connection" | "transfer-encoding" | "content-length"
+        ) {
+            continue;
+        }
+        if k_str.to_lowercase() == "authorization" {
+            fwd_headers.insert(
+                reqwest::header::AUTHORIZATION,
+                reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
+                    .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static("")),
+            );
+        } else if let (Ok(name), Ok(value)) = (
+            reqwest::header::HeaderName::from_bytes(k_str.as_bytes()),
+            reqwest::header::HeaderValue::from_bytes(v.as_bytes()),
+        ) {
+            fwd_headers.insert(name, value);
+        }
+    }
+
+    if !headers.contains_key("Authorization")
+        && !headers.contains_key("authorization")
+        && !api_key.is_empty()
+    {
+        fwd_headers.insert(
+            reqwest::header::AUTHORIZATION,
+            reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
+                .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static("")),
+        );
+    }
+
+    fwd_headers
 }
 
 /// 写入用量记录（非流式路径）
