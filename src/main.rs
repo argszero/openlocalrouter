@@ -46,10 +46,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let handle = run_backend(config, db.clone()).await;
 
-    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-        .expect("无法注册 SIGTERM handler");
-    let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-        .expect("无法注册 SIGINT handler");
+    wait_for_shutdown(handle).await;
+
+    db.close().await;
+    log::info!("服务已安全停止");
+    Ok(())
+}
+
+/// 等待关闭信号 — 跨平台（Unix 支持 SIGTERM/SIGINT，Windows 支持 Ctrl+C）
+#[cfg(unix)]
+async fn wait_for_shutdown(handle: tokio::task::JoinHandle<()>) {
+    let mut sigterm =
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("无法注册 SIGTERM handler");
+    let mut sigint =
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+            .expect("无法注册 SIGINT handler");
 
     tokio::select! {
         _ = handle => {},
@@ -60,7 +72,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             log::info!("收到 SIGINT，正在优雅关闭…");
         }
     }
-    db.close().await;
-    log::info!("服务已安全停止");
-    Ok(())
+}
+
+#[cfg(not(unix))]
+async fn wait_for_shutdown(handle: tokio::task::JoinHandle<()>) {
+    tokio::select! {
+        _ = handle => {},
+        _ = tokio::signal::ctrl_c() => {
+            log::info!("收到 Ctrl+C，正在优雅关闭…");
+        }
+    }
 }
