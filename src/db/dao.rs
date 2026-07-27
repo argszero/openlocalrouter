@@ -1272,7 +1272,7 @@ impl Database {
 
             let sql = format!(
                 "SELECT date(u.created_at) as ts, {group_col},
-                        SUM(u.input_tokens + u.output_tokens), COUNT(*)
+                        SUM(u.input_tokens + u.output_tokens) AS total_tokens, COUNT(*)
                  FROM usage_records u {join}
                  {where_clause}
                  GROUP BY ts, {group_col} ORDER BY ts ASC, total_tokens DESC"
