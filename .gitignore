@@ -27,5 +27,4 @@ Thumbs.db
 src-tauri/target/
 .env
 .env.local
-.emrg/*
-!.emrg/memory/
+.emrg/
