@@ -1,6 +1,8 @@
 # Project Memory Index
 
 | ID | Title | Type | Status | Updated |
+| a0b1c9037 | [Cycle #37 — NTE ⚡ (emrg-72a8f046)](evolution-cycle-37-openlocalrouter-emrg-72a8f046.md) | project | complete | 2026-07-28T18:04:00Z |
+| a0b1c9036 | [Cycle #36 — NTE ⚡ (emrg-a9cd9c3f)](evolution-cycle-36-openlocalrouter-emrg-a9cd9c3f.md) | project | complete | 2026-07-28T11:10:00Z |
 | a0b1c9035 | [Cycle #35 — NTE ⚡ (emrg-a9cd9c3f)](evolution-cycle-35-openlocalrouter-emrg-a9cd9c3f.md) | project | complete | 2026-07-28T11:05:00Z |
 | a0b1c9034 | [Cycle #34 — NTE ⚡ (emrg-a9cd9c3f)](evolution-cycle-34-openlocalrouter-emrg-a9cd9c3f.md) | project | complete | 2026-07-28T11:00:00Z |
 | a0b1c9033 | [Cycle #33 — NTE ⚡ (emrg-a9cd9c3f)](evolution-cycle-33-openlocalrouter-emrg-a9cd9c3f.md) | project | complete | 2026-07-28T00:35:55Z |
