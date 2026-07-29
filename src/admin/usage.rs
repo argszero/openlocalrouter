@@ -22,6 +22,14 @@ pub struct UsageQuery {
     pub to: Option<String>,
     pub limit: Option<u32>,
     pub offset: Option<u32>,
+    /// LIKE filter on model column
+    pub model: Option<String>,
+    /// LIKE filter on user username (via users table JOIN)
+    pub user_id: Option<String>,
+    /// LIKE filter on provider_name
+    pub provider: Option<String>,
+    /// LIKE filter on endpoint_api_keys.name
+    pub key_name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -62,6 +70,10 @@ pub async fn list_usage(
             None, // key_owner_id
             q.from.as_deref(),
             q.to.as_deref(),
+            q.model.as_deref(),
+            q.user_id.as_deref(),
+            q.provider.as_deref(),
+            q.key_name.as_deref(),
             q.limit.unwrap_or(50),
             q.offset.unwrap_or(0),
         )
@@ -111,6 +123,10 @@ pub async fn key_usage(
             None,
             q.from.as_deref(),
             q.to.as_deref(),
+            q.model.as_deref(),
+            q.user_id.as_deref(),
+            q.provider.as_deref(),
+            q.key_name.as_deref(),
             q.limit.unwrap_or(50),
             q.offset.unwrap_or(0),
         )
@@ -193,6 +209,10 @@ pub async fn my_usage_records(
             None,
             q.from.as_deref(),
             q.to.as_deref(),
+            q.model.as_deref(),
+            q.user_id.as_deref(),
+            q.provider.as_deref(),
+            q.key_name.as_deref(),
             q.limit.unwrap_or(50),
             q.offset.unwrap_or(0),
         )
@@ -330,6 +350,10 @@ pub async fn shared_records(
             Some(&auth.user_id),
             q.from.as_deref(),
             q.to.as_deref(),
+            q.model.as_deref(),
+            q.user_id.as_deref(),
+            q.provider.as_deref(),
+            q.key_name.as_deref(),
             q.limit.unwrap_or(50),
             q.offset.unwrap_or(0),
         )
