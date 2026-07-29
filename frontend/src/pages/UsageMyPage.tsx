@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getMyUsageSummary, getMyUsageTrend, getMyUsageTrendBreakdown, getMyUsageRecords } from '../lib/api'
 import type { TimeSeriesBreakdown } from '../lib/api'
-import { Zap, ArrowUpRight, Cpu, MousePointerClick, Brain, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Zap, ArrowUpRight, Cpu, MousePointerClick, Brain, Calendar, ChevronLeft, ChevronRight, Filter, XCircle } from 'lucide-react'
 
 function formatTokens(n: number) { if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'; if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k'; return String(n) }
 function formatDate(s: string) { return s.replace('T', ' ').slice(0, 16) }
@@ -11,6 +11,8 @@ function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); 
 
 // ── Color palette ────────────────────────────────────
 const COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4']
+
+type ColumnFilter = { model: string; provider: string; key: string }
 
 // ── SVG Trend Chart ──────────────────────────────────
 function TrendChart({ series, height }: { series: { label: string; color: string; points: { ts: string; val: number }[] }[]; height: number }) {
@@ -84,11 +86,23 @@ export default function UsageMyPage() {
   const [dateTo, setDateTo] = useState(todayStr())
   const [page, setPage] = useState(0)
   const [trendMode, setTrendMode] = useState<'total' | 'model' | 'key'>('total')
+  const [filters, setFilters] = useState<ColumnFilter>({ model: '', provider: '', key: '' })
+  const [showFilters, setShowFilters] = useState(false)
   const limit = 25
 
   // Summary + records (existing)
   const { data: summary } = useQuery({ queryKey: ['myUsageSum', dateFrom, dateTo], queryFn: () => getMyUsageSummary('model', dateFrom, dateTo), refetchInterval: 30000 })
-  const { data: records, isLoading } = useQuery({ queryKey: ['myUsageRec', page, dateFrom, dateTo], queryFn: () => getMyUsageRecords({ from: dateFrom, to: dateTo, limit, offset: page * limit }), refetchInterval: 30000 })
+  const { data: records, isLoading } = useQuery({
+    queryKey: ['myUsageRec', page, dateFrom, dateTo, filters],
+    queryFn: () => getMyUsageRecords({
+      from: dateFrom, to: dateTo,
+      model: filters.model || undefined,
+      provider: filters.provider || undefined,
+      key_name: filters.key || undefined,
+      limit, offset: page * limit,
+    }),
+    refetchInterval: 30000,
+  })
 
   // Total trend
   const { data: totalTrend } = useQuery({ queryKey: ['myTrend', dateFrom, dateTo], queryFn: () => getMyUsageTrend({ from: dateFrom, to: dateTo }), refetchInterval: 60000, enabled: trendMode === 'total' })
@@ -97,6 +111,18 @@ export default function UsageMyPage() {
 
   const totalPages = records ? Math.ceil(records.total / limit) : 0
   const groups = summary?.groups || []
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== '')
+
+  const setFilter = useCallback((col: keyof ColumnFilter, value: string) => {
+    setFilters(f => ({ ...f, [col]: value }))
+    setPage(0)
+  }, [])
+
+  const clearFilters = useCallback(() => {
+    setFilters({ model: '', provider: '', key: '' })
+    setPage(0)
+  }, [])
 
   const stats = useMemo(() => ({
     tokens: groups.reduce((s, g) => s + g.total_input_tokens + g.total_output_tokens, 0),
@@ -193,15 +219,46 @@ export default function UsageMyPage() {
       {/* Records table */}
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="px-5 py-3 border-b flex items-center justify-between bg-gray-50/50">
-          <h3 className="text-sm font-semibold text-gray-700">明细</h3>
-          {records && <span className="text-xs text-gray-400">共 {records.total} 条</span>}
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-700">明细</h3>
+            {records && <span className="text-xs text-gray-400">共 {records.total} 条</span>}
+          </div>
+          <button
+            onClick={() => { setShowFilters(!showFilters); if (!showFilters) clearFilters() }}
+            className={`flex items-center gap-1 px-2 py-1 text-xs border rounded transition-colors ${
+              showFilters ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'hover:bg-gray-50 text-gray-500'
+            }`}
+          >
+            <Filter size={12} />
+            筛选
+            {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+          </button>
         </div>
+
+        {showFilters && (
+          <div className="px-5 py-2 border-b bg-gray-50/30">
+            <div className="flex items-center gap-2 flex-wrap">
+              <FilterInput label="Key" value={filters.key} onChange={v => setFilter('key', v)} />
+              <FilterInput label="模型" value={filters.model} onChange={v => setFilter('model', v)} />
+              <FilterInput label="Provider" value={filters.provider} onChange={v => setFilter('provider', v)} />
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle size={12} />
+                清除
+              </button>
+            </div>
+          </div>
+        )}
+
         {isLoading ? <div className="p-5 text-sm text-gray-400">加载中...</div> : !records?.records?.length ? (
           <div className="p-8 text-center text-sm text-gray-400">暂无数据</div>
         ) : (
           <table className="w-full">
             <thead><tr className="border-b border-gray-100">
               <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">时间</th>
+              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">Key</th>
               <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">模型</th>
               <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">Provider</th>
               <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-2">Input</th>
@@ -212,6 +269,7 @@ export default function UsageMyPage() {
               {(records.records || []).map(r => (
                 <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-5 py-2 text-sm text-gray-400 whitespace-nowrap">{formatDate(r.created_at)}</td>
+                  <td className="px-5 py-2 text-sm text-gray-600 truncate max-w-[140px]" title={r.api_key_id}>{r.key_name || r.api_key_id.slice(0, 12) + '...' || '—'}</td>
                   <td className="px-5 py-2 text-sm font-mono text-gray-700">{r.model}</td>
                   <td className="px-5 py-2 text-sm text-gray-500">{r.provider_name}</td>
                   <td className="px-5 py-2 text-sm text-gray-600 text-right">{formatTokens(r.input_tokens)}</td>
@@ -230,6 +288,21 @@ export default function UsageMyPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function FilterInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      <label className="text-xs text-gray-400 whitespace-nowrap">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="筛选…"
+        className="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+      />
     </div>
   )
 }

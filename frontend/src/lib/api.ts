@@ -170,10 +170,13 @@ export const getMyUsageTrendBreakdown = (params: { group_by?: string; from?: str
   if (params.to) qs.set('to', params.to)
   return request<{ points: TimeSeriesBreakdown[] }>(`/usage/my/trend-breakdown?${qs}`)
 }
-export const getMyUsageRecords = (params: { from?: string; to?: string; limit?: number; offset?: number }) => {
+export const getMyUsageRecords = (params: { from?: string; to?: string; model?: string; provider?: string; key_name?: string; limit?: number; offset?: number }) => {
   const qs = new URLSearchParams()
   if (params.from) qs.set('from', params.from)
   if (params.to) qs.set('to', params.to)
+  if (params.model) qs.set('model', params.model)
+  if (params.provider) qs.set('provider', params.provider)
+  if (params.key_name) qs.set('key_name', params.key_name)
   if (params.limit) qs.set('limit', String(params.limit))
   if (params.offset) qs.set('offset', String(params.offset))
   return request<{ records: UsageRecord[]; total: number }>(`/usage/my/records?${qs}`)
