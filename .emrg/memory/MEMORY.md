@@ -1,6 +1,7 @@
 # Project Memory Index
 
 | ID | Title | Type | Status | Updated |
+| a0b1c9039 | [Cycle #9 — 分享用量列筛选 + 用户/Key列 / PR #78 (emrg-5bba527f)](evolution-cycle-9-openlocalrouter-emrg-5bba527f.md) | project | complete | 2026-07-29T02:11:00Z |
 | a0b1c9037 | [Cycle #37 — NTE ⚡ (emrg-72a8f046)](evolution-cycle-37-openlocalrouter-emrg-72a8f046.md) | project | complete | 2026-07-28T18:04:00Z |
 | a0b1c9036 | [Cycle #36 — NTE ⚡ (emrg-a9cd9c3f)](evolution-cycle-36-openlocalrouter-emrg-a9cd9c3f.md) | project | complete | 2026-07-28T11:10:00Z |
 | a0b1c9035 | [Cycle #35 — NTE ⚡ (emrg-a9cd9c3f)](evolution-cycle-35-openlocalrouter-emrg-a9cd9c3f.md) | project | complete | 2026-07-28T11:05:00Z |
