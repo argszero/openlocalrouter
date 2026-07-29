@@ -876,6 +876,8 @@ async fn write_usage_record(db: &Database, ctx: &UsageContext, usage: &TokenUsag
         output_tokens: i64::from(usage.output_tokens),
         cache_read_tokens: i64::from(usage.cache_read_tokens),
         created_at: String::new(),
+        key_name: String::new(),
+        user_name: String::new(),
     };
     if let Err(e) = db.insert_usage_record(&row).await {
         log::warn!("写入用量记录失败: {e}");
@@ -984,6 +986,8 @@ impl futures::Stream for UsageRecordingStream {
                                 output_tokens: i64::from(usage.output_tokens),
                                 cache_read_tokens: i64::from(usage.cache_read_tokens),
                                 created_at: String::new(),
+                                key_name: String::new(),
+                                user_name: String::new(),
                             };
                             if let Err(e) = db.insert_usage_record(&row).await {
                                 log::warn!("写入流式用量记录失败: {e}");

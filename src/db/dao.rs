@@ -97,6 +97,10 @@ pub struct UsageRecordRow {
     pub output_tokens: i64,
     pub cache_read_tokens: i64,
     pub created_at: String,
+    /// Resolved from endpoint_api_keys JOIN (or empty)
+    pub key_name: String,
+    /// Resolved from users JOIN (or empty)
+    pub user_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1052,6 +1056,10 @@ impl Database {
         key_owner_id: Option<&str>,
         from: Option<&str>,
         to: Option<&str>,
+        model: Option<&str>,
+        user_id_filter: Option<&str>,
+        provider: Option<&str>,
+        key_name: Option<&str>,
         limit: u32,
         offset: u32,
     ) -> Result<(Vec<UsageRecordRow>, i64), AppError> {
@@ -1061,6 +1069,10 @@ impl Database {
         let key_owner_id = key_owner_id.map(std::string::ToString::to_string);
         let from = from.map(std::string::ToString::to_string);
         let to = to.map(std::string::ToString::to_string);
+        let model = model.map(std::string::ToString::to_string);
+        let user_id_filter = user_id_filter.map(std::string::ToString::to_string);
+        let provider = provider.map(std::string::ToString::to_string);
+        let key_name = key_name.map(std::string::ToString::to_string);
 
         self.with_conn(move |conn| {
             let mut conditions = Vec::new();
@@ -1093,6 +1105,26 @@ impl Database {
                 ));
                 params.push(Box::new(v.clone()));
             }
+            if let Some(ref v) = model {
+                conditions.push(format!("u.model LIKE ?{}", params.len() + 1));
+                params.push(Box::new(format!("%{v}%")));
+            }
+            if let Some(ref v) = user_id_filter {
+                // filter by username via JOIN
+                conditions.push(format!(
+                    "COALESCE(usr.username, u.user_id) LIKE ?{}",
+                    params.len() + 1
+                ));
+                params.push(Box::new(format!("%{v}%")));
+            }
+            if let Some(ref v) = provider {
+                conditions.push(format!("u.provider_name LIKE ?{}", params.len() + 1));
+                params.push(Box::new(format!("%{v}%")));
+            }
+            if let Some(ref v) = key_name {
+                conditions.push(format!("COALESCE(k.name, '') LIKE ?{}", params.len() + 1));
+                params.push(Box::new(format!("%{v}%")));
+            }
 
             let where_clause = if conditions.is_empty() {
                 String::new()
@@ -1100,7 +1132,11 @@ impl Database {
                 format!("WHERE {}", conditions.join(" AND "))
             };
 
-            let count_sql = format!("SELECT COUNT(*) FROM usage_records u {where_clause}");
+            let count_sql = format!(
+                "SELECT COUNT(*) FROM usage_records u
+                 LEFT JOIN users usr ON usr.id = u.user_id
+                 {where_clause}"
+            );
             let params_refs: Vec<&dyn rusqlite::types::ToSql> =
                 params.iter().map(std::convert::AsRef::as_ref).collect();
             let total: i64 = conn.query_row(&count_sql, params_refs.as_slice(), |r| r.get(0))?;
@@ -1109,9 +1145,11 @@ impl Database {
                 "SELECT u.id, u.api_key_id, u.key_owner_id, u.endpoint_id, u.user_id,
                  u.provider_id, u.provider_name, u.model,
                  u.input_tokens, u.output_tokens, u.cache_read_tokens, u.created_at,
-                 COALESCE(k.name, '') as key_name, COALESCE(k.key_prefix, '') as key_prefix
+                 COALESCE(k.name, '') as key_name,
+                 COALESCE(usr.username, '') as user_name
                  FROM usage_records u
                  LEFT JOIN endpoint_api_keys k ON k.id = u.api_key_id
+                 LEFT JOIN users usr ON usr.id = u.user_id
                  {where_clause}
                  ORDER BY u.created_at DESC
                  LIMIT ?{} OFFSET ?{}",
@@ -1139,6 +1177,8 @@ impl Database {
                     output_tokens: row.get(9)?,
                     cache_read_tokens: row.get(10)?,
                     created_at: row.get(11)?,
+                    key_name: row.get::<_, String>(12).unwrap_or_default(),
+                    user_name: row.get::<_, String>(13).unwrap_or_default(),
                 })
             })?;
 

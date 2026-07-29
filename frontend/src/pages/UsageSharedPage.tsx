@@ -1,24 +1,51 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getSharedSummary, getSharedTop, getSharedKeys, getSharedRecords } from '../lib/api'
-import { Zap, Key, TrendingUp, MousePointerClick, Calendar, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import { Zap, Key, TrendingUp, MousePointerClick, Calendar, ChevronLeft, ChevronRight, Users, Filter, XCircle } from 'lucide-react'
 
 function formatTokens(n: number) { if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'; if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k'; return String(n) }
 function formatDate(s: string) { return s.replace('T', ' ').slice(0, 16) }
 function todayStr() { return new Date().toISOString().slice(0, 10) }
 function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10) }
 
+type ColumnFilter = { model: string; user: string; provider: string; key: string }
+
 export default function UsageSharedPage() {
   const [dateFrom, setDateFrom] = useState(daysAgo(7))
   const [dateTo, setDateTo] = useState(todayStr())
   const [page, setPage] = useState(0)
+  const [filters, setFilters] = useState<ColumnFilter>({ model: '', user: '', provider: '', key: '' })
+  const [showFilters, setShowFilters] = useState(false)
   const limit = 25
 
   const { data: summary } = useQuery({ queryKey: ['sharedSummary', dateFrom, dateTo], queryFn: () => getSharedSummary(dateFrom, dateTo), refetchInterval: 30000 })
   const { data: topCustomers } = useQuery({ queryKey: ['sharedTopCust', dateFrom, dateTo], queryFn: () => getSharedTop('key', dateFrom, dateTo), refetchInterval: 30000 })
   const { data: topModels } = useQuery({ queryKey: ['sharedTopModel', dateFrom, dateTo], queryFn: () => getSharedTop('model', dateFrom, dateTo), refetchInterval: 30000 })
   const { data: keysData } = useQuery({ queryKey: ['sharedKeys'], queryFn: getSharedKeys, refetchInterval: 30000 })
-  const { data: records, isLoading } = useQuery({ queryKey: ['sharedRecords', page, dateFrom, dateTo], queryFn: () => getSharedRecords({ from: dateFrom, to: dateTo, limit, offset: page * limit }), refetchInterval: 30000 })
+  const { data: records, isLoading } = useQuery({
+    queryKey: ['sharedRecords', page, dateFrom, dateTo, filters],
+    queryFn: () => getSharedRecords({
+      from: dateFrom, to: dateTo,
+      model: filters.model || undefined,
+      user_id: filters.user || undefined,
+      provider: filters.provider || undefined,
+      key_name: filters.key || undefined,
+      limit, offset: page * limit,
+    }),
+    refetchInterval: 30000,
+  })
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== '')
+
+  const setFilter = useCallback((col: keyof ColumnFilter, value: string) => {
+    setFilters(f => ({ ...f, [col]: value }))
+    setPage(0)
+  }, [])
+
+  const clearFilters = useCallback(() => {
+    setFilters({ model: '', user: '', provider: '', key: '' })
+    setPage(0)
+  }, [])
 
   const totalPages = records ? Math.ceil(records.total / limit) : 0
   const s = summary || { today_tokens: 0, yesterday_tokens: 0, trend_pct: 0, active_keys: 0, total_keys: 0, active_users: 0 }
@@ -93,25 +120,48 @@ export default function UsageSharedPage() {
 
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="px-5 py-3 border-b flex items-center justify-between bg-gray-50/50">
-          <h3 className="text-sm font-semibold text-gray-700">消费明细</h3>
-          {records && <span className="text-xs text-gray-400">共 {records.total} 条</span>}
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-700">消费明细</h3>
+            {records && <span className="text-xs text-gray-400">共 {records.total} 条</span>}
+          </div>
+          <button
+            onClick={() => { setShowFilters(!showFilters); if (!showFilters) clearFilters() }}
+            className={`flex items-center gap-1 px-2 py-1 text-xs border rounded transition-colors ${
+              showFilters ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'hover:bg-gray-50 text-gray-500'
+            }`}
+          >
+            <Filter size={12} />
+            筛选
+            {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+          </button>
         </div>
+
+        {showFilters && (
+          <div className="px-5 py-2 border-b bg-gray-50/30">
+            <FilterRow filters={filters} setFilter={setFilter} clearFilters={clearFilters} />
+          </div>
+        )}
+
         {isLoading ? <div className="p-5 text-sm text-gray-400">加载中...</div> : !records?.records?.length ? (
           <div className="p-8 text-center text-sm text-gray-400">暂无数据</div>
         ) : (
           <table className="w-full">
             <thead><tr className="border-b border-gray-100">
-              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">时间</th>
-              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">模型</th>
-              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">Provider</th>
-              <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-2">Input</th>
-              <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-2">Output</th>
-              <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-2">Total</th>
+              <ThCell>时间</ThCell>
+              <ThCell>用户</ThCell>
+              <ThCell>Key</ThCell>
+              <ThCell>模型</ThCell>
+              <ThCell>Provider</ThCell>
+              <ThCell align="right">Input</ThCell>
+              <ThCell align="right">Output</ThCell>
+              <ThCell align="right">Total</ThCell>
             </tr></thead>
             <tbody>
               {(records.records || []).map(r => (
                 <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-5 py-2 text-sm text-gray-400 whitespace-nowrap">{formatDate(r.created_at)}</td>
+                  <td className="px-5 py-2 text-sm text-gray-700" title={r.user_id}>{r.user_name || r.user_id || '—'}</td>
+                  <td className="px-5 py-2 text-sm text-gray-600" title={r.api_key_id}>{r.key_name || r.api_key_id.slice(0, 12) + '...' || '—'}</td>
                   <td className="px-5 py-2 text-sm font-mono text-gray-700">{r.model}</td>
                   <td className="px-5 py-2 text-sm text-gray-500">{r.provider_name}</td>
                   <td className="px-5 py-2 text-sm text-gray-600 text-right">{formatTokens(r.input_tokens)}</td>
@@ -130,6 +180,51 @@ export default function UsageSharedPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function ThCell({ children, align }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+  return (
+    <th className={`text-xs font-medium text-gray-400 uppercase px-5 py-2 ${align === 'right' ? 'text-right' : 'text-left'}`}>
+      {children}
+    </th>
+  )
+}
+
+function FilterRow({ filters, setFilter, clearFilters }: {
+  filters: ColumnFilter
+  setFilter: (col: keyof ColumnFilter, value: string) => void
+  clearFilters: () => void
+}) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <FilterInput label="用户" value={filters.user} onChange={v => setFilter('user', v)} />
+      <FilterInput label="Key" value={filters.key} onChange={v => setFilter('key', v)} />
+      <FilterInput label="模型" value={filters.model} onChange={v => setFilter('model', v)} />
+      <FilterInput label="Provider" value={filters.provider} onChange={v => setFilter('provider', v)} />
+      <button
+        onClick={clearFilters}
+        className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <XCircle size={12} />
+        清除
+      </button>
+    </div>
+  )
+}
+
+function FilterInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      <label className="text-xs text-gray-400 whitespace-nowrap">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="筛选…"
+        className="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+      />
     </div>
   )
 }

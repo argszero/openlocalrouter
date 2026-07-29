@@ -134,6 +134,7 @@ export interface UsageRecord {
   provider_id: string; provider_name: string; model: string
   input_tokens: number; output_tokens: number; cache_read_tokens: number
   created_at: string
+  key_name: string; user_name: string
 }
 export interface UsageAggregate {
   key: string; key_name?: string
@@ -200,12 +201,15 @@ export const getSharedTop = (rankBy: string, from?: string, to?: string) => {
 }
 export const getSharedKeys = () =>
   request<{ keys: { id: string; name: string; assigned_to: string; last_used_at: string | null; created_by: string }[] }>(`/usage/shared/keys`)
-export const getSharedRecords = (params: { from?: string; to?: string; api_key_id?: string; model?: string; limit?: number; offset?: number }) => {
+export const getSharedRecords = (params: { from?: string; to?: string; api_key_id?: string; model?: string; user_id?: string; provider?: string; key_name?: string; limit?: number; offset?: number }) => {
   const qs = new URLSearchParams()
   if (params.from) qs.set('from', params.from)
   if (params.to) qs.set('to', params.to)
   if (params.api_key_id) qs.set('api_key_id', params.api_key_id)
   if (params.model) qs.set('model', params.model)
+  if (params.user_id) qs.set('user_id', params.user_id)
+  if (params.provider) qs.set('provider', params.provider)
+  if (params.key_name) qs.set('key_name', params.key_name)
   if (params.limit) qs.set('limit', String(params.limit))
   if (params.offset) qs.set('offset', String(params.offset))
   return request<{ records: UsageRecord[]; total: number }>(`/usage/shared/records?${qs}`)
