@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getSharedSummary, getSharedTop, getSharedKeys, getSharedRecords } from '../lib/api'
 import { Zap, Key, TrendingUp, MousePointerClick, Calendar, ChevronLeft, ChevronRight, Users, Filter, XCircle } from 'lucide-react'
+import { useI18n, t, tf } from '../lib/i18n'
 
 function formatTokens(n: number) { if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'; if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k'; return String(n) }
 function formatDate(s: string) { return s.replace('T', ' ').slice(0, 16) }
@@ -16,6 +17,7 @@ export default function UsageSharedPage() {
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState<ColumnFilter>({ model: '', user: '', provider: '', key: '' })
   const [showFilters, setShowFilters] = useState(false)
+  const { lang } = useI18n()
   const limit = 25
 
   const { data: summary } = useQuery({ queryKey: ['sharedSummary', dateFrom, dateTo], queryFn: () => getSharedSummary(dateFrom, dateTo), refetchInterval: 30000 })
@@ -52,45 +54,45 @@ export default function UsageSharedPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">分享用量</h2>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">{t(lang, 'usageshared.title')}</h2>
       <div className="flex items-center gap-2 mb-4">
         <Calendar size={14} className="text-gray-400" />
         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0) }} className="px-2 py-1 border border-gray-300 rounded text-xs" />
         <span className="text-gray-300">{'—'}</span>
         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0) }} className="px-2 py-1 border border-gray-300 rounded text-xs" />
-        <button onClick={() => { setDateFrom(daysAgo(7)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">7天</button>
-        <button onClick={() => { setDateFrom(daysAgo(30)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">30天</button>
+        <button onClick={() => { setDateFrom(daysAgo(7)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">{t(lang, 'usage.days7')}</button>
+        <button onClick={() => { setDateFrom(daysAgo(30)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">{t(lang, 'usage.days30')}</button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
-        <StatC icon={<Zap size={16} />} label="今日消耗" value={formatTokens(s.today_tokens)} color="indigo" />
-        <StatC icon={<TrendingUp size={16} />} label="较昨日" value={(s.trend_pct >= 0 ? '\u2191' : '\u2193') + Math.abs(s.trend_pct).toFixed(1) + '%'} color={s.trend_pct >= 0 ? 'emerald' : 'rose'} />
-        <StatC icon={<Key size={16} />} label="活跃Key" value={s.active_keys + '/' + s.total_keys} color="amber" />
-        <StatC icon={<Users size={16} />} label="活跃客户" value={String(s.active_users)} color="blue" />
-        <StatC icon={<MousePointerClick size={16} />} label="总Key数" value={String(s.total_keys)} color="purple" />
+        <StatC icon={<Zap size={16} />} label={t(lang, 'usageshared.today_consumption')} value={formatTokens(s.today_tokens)} color="indigo" />
+        <StatC icon={<TrendingUp size={16} />} label={t(lang, 'usageshared.vs_yesterday')} value={(s.trend_pct >= 0 ? '\u2191' : '\u2193') + Math.abs(s.trend_pct).toFixed(1) + '%'} color={s.trend_pct >= 0 ? 'emerald' : 'rose'} />
+        <StatC icon={<Key size={16} />} label={t(lang, 'usageshared.active_keys')} value={s.active_keys + '/' + s.total_keys} color="amber" />
+        <StatC icon={<Users size={16} />} label={t(lang, 'usageshared.active_users')} value={String(s.active_users)} color="blue" />
+        <StatC icon={<MousePointerClick size={16} />} label={t(lang, 'usageshared.total_keys')} value={String(s.total_keys)} color="purple" />
         <StatC icon={<Users size={16} />} label="" value="" color="cyan" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">TOP 客户</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">{t(lang, 'usageshared.top_customers')}</h3>
           {(topCustomers?.groups || []).slice(0, 8).map((g, i) => (
             <div key={g.key} className="flex items-center gap-2 py-1.5 text-xs">
               <span className="w-5 text-gray-400 text-right">{i + 1}</span>
               <span className="flex-1 text-gray-700 truncate">{g.key}</span>
               <span className="text-gray-500">{formatTokens(g.total_input_tokens + g.total_output_tokens)}</span>
-              <span className="text-gray-300">{g.count}次</span>
+              <span className="text-gray-300">{tf(lang, 'usage.count_suffix', { n: g.count })}</span>
             </div>
           ))}
         </div>
         <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">TOP 模型</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">{t(lang, 'usageshared.top_models')}</h3>
           {(topModels?.groups || []).slice(0, 8).map((g, i) => (
             <div key={g.key} className="flex items-center gap-2 py-1.5 text-xs">
               <span className="w-5 text-gray-400 text-right">{i + 1}</span>
               <span className="flex-1 text-gray-700 truncate">{g.key}</span>
               <span className="text-gray-500">{formatTokens(g.total_input_tokens + g.total_output_tokens)}</span>
-              <span className="text-gray-300">{g.count}次</span>
+              <span className="text-gray-300">{tf(lang, 'usage.count_suffix', { n: g.count })}</span>
             </div>
           ))}
         </div>
@@ -98,20 +100,20 @@ export default function UsageSharedPage() {
 
       <div className="bg-white rounded-xl border overflow-hidden mb-6">
         <div className="px-5 py-3 border-b bg-gray-50/50">
-          <h3 className="text-sm font-semibold text-gray-700">Key 状态</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{t(lang, 'usageshared.key_status')}</h3>
         </div>
         <table className="w-full">
           <thead><tr className="border-b border-gray-100">
-            <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">名称</th>
-            <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">分配给</th>
-            <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">最后使用</th>
+            <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">{t(lang, 'keys.name_col')}</th>
+            <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">{t(lang, 'keys.assigned_to')}</th>
+            <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">{t(lang, 'keys.last_used')}</th>
           </tr></thead>
           <tbody>
             {(keysData?.keys || []).map(k => (
               <tr key={k.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                 <td className="px-5 py-2 text-sm text-gray-700">{k.name}</td>
                 <td className="px-5 py-2 text-sm text-gray-600">{k.assigned_to}</td>
-                <td className="px-5 py-2 text-sm text-gray-400">{k.last_used_at ? formatDate(k.last_used_at) : '从未使用'}</td>
+                <td className="px-5 py-2 text-sm text-gray-400">{k.last_used_at ? formatDate(k.last_used_at) : t(lang, 'usageshared.never_used')}</td>
               </tr>
             ))}
           </tbody>
@@ -121,8 +123,8 @@ export default function UsageSharedPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="px-5 py-3 border-b flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-700">消费明细</h3>
-            {records && <span className="text-xs text-gray-400">共 {records.total} 条</span>}
+            <h3 className="text-sm font-semibold text-gray-700">{t(lang, 'usageshared.consumption_detail')}</h3>
+            {records && <span className="text-xs text-gray-400">{tf(lang, 'usage.total_records', { n: records.total })}</span>}
           </div>
           <button
             onClick={() => { setShowFilters(!showFilters); if (!showFilters) clearFilters() }}
@@ -131,7 +133,7 @@ export default function UsageSharedPage() {
             }`}
           >
             <Filter size={12} />
-            筛选
+            {t(lang, 'usage.filter')}
             {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
           </button>
         </div>
@@ -142,15 +144,15 @@ export default function UsageSharedPage() {
           </div>
         )}
 
-        {isLoading ? <div className="p-5 text-sm text-gray-400">加载中...</div> : !records?.records?.length ? (
-          <div className="p-8 text-center text-sm text-gray-400">暂无数据</div>
+        {isLoading ? <div className="p-5 text-sm text-gray-400">{t(lang, 'common.loading')}</div> : !records?.records?.length ? (
+          <div className="p-8 text-center text-sm text-gray-400">{t(lang, 'usage.no_data')}</div>
         ) : (
           <table className="w-full">
             <thead><tr className="border-b border-gray-100">
-              <ThCell>时间</ThCell>
-              <ThCell>用户</ThCell>
+              <ThCell>{t(lang, 'usage.time')}</ThCell>
+              <ThCell>{t(lang, 'usageshared.user')}</ThCell>
               <ThCell>Key</ThCell>
-              <ThCell>模型</ThCell>
+              <ThCell>{t(lang, 'usage.model')}</ThCell>
               <ThCell>Provider</ThCell>
               <ThCell align="right">Input</ThCell>
               <ThCell align="right">Output</ThCell>
@@ -174,9 +176,9 @@ export default function UsageSharedPage() {
         )}
         {totalPages > 1 && (
           <div className="px-5 py-3 border-t flex items-center justify-between bg-gray-50/30">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30"><ChevronLeft size={14} /> 上一页</button>
-            <span className="text-xs text-gray-400">第 {page + 1}/{totalPages} 页</span>
-            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30">下一页 <ChevronRight size={14} /></button>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30"><ChevronLeft size={14} /> {t(lang, 'usage.prev')}</button>
+            <span className="text-xs text-gray-400">{tf(lang, 'usage.page_info', { cur: page + 1, total: totalPages })}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30">{t(lang, 'usage.next')} <ChevronRight size={14} /></button>
           </div>
         )}
       </div>
@@ -197,24 +199,26 @@ function FilterRow({ filters, setFilter, clearFilters }: {
   setFilter: (col: keyof ColumnFilter, value: string) => void
   clearFilters: () => void
 }) {
+  const { lang } = useI18n()
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <FilterInput label="用户" value={filters.user} onChange={v => setFilter('user', v)} />
+      <FilterInput label={t(lang, 'usageshared.user')} value={filters.user} onChange={v => setFilter('user', v)} />
       <FilterInput label="Key" value={filters.key} onChange={v => setFilter('key', v)} />
-      <FilterInput label="模型" value={filters.model} onChange={v => setFilter('model', v)} />
+      <FilterInput label={t(lang, 'usage.model')} value={filters.model} onChange={v => setFilter('model', v)} />
       <FilterInput label="Provider" value={filters.provider} onChange={v => setFilter('provider', v)} />
       <button
         onClick={clearFilters}
         className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
       >
         <XCircle size={12} />
-        清除
+        {t(lang, 'usage.clear')}
       </button>
     </div>
   )
 }
 
 function FilterInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const { lang } = useI18n()
   return (
     <div className="flex items-center gap-1">
       <label className="text-xs text-gray-400 whitespace-nowrap">{label}</label>
@@ -222,7 +226,7 @@ function FilterInput({ label, value, onChange }: { label: string; value: string;
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="筛选…"
+        placeholder={t(lang, 'usage.filter_placeholder')}
         className="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
       />
     </div>

@@ -5,6 +5,7 @@ import type { User } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { toast } from 'sonner'
 import { Plus, Trash2, ToggleLeft, ToggleRight, Shield, UserIcon, Key, Pencil, Check, X } from 'lucide-react'
+import { useI18n, t } from '../lib/i18n'
 
 export default function UsersPage() {
   const queryClient = useQueryClient()
@@ -18,12 +19,13 @@ export default function UsersPage() {
   const [editingUsername, setEditingUsername] = useState('')
   const [resettingPw, setResettingPw] = useState<string | null>(null)
   const [newUserPw, setNewUserPw] = useState('')
+  const { lang } = useI18n()
 
   const createMut = useMutation({
     mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success('用户已创建')
+      toast.success(t(lang, 'users.created'))
       setShowCreate(false)
       setForm({ username: '', password: '', is_admin: false })
     },
@@ -34,7 +36,7 @@ export default function UsersPage() {
     mutationFn: ({ id, data }: { id: string; data: Partial<User> & { password?: string } }) => updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success('用户已更新')
+      toast.success(t(lang, 'users.updated'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -43,7 +45,7 @@ export default function UsersPage() {
     mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success('用户已删除')
+      toast.success(t(lang, 'users.deleted'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -52,7 +54,7 @@ export default function UsersPage() {
     mutationFn: ({ id, password }: { id: string; password: string }) => updateUser(id, { password }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success('密码已修改')
+      toast.success(t(lang, 'users.password_changed'))
       setShowPasswordChange(false)
       setPasswordForm({ newPassword: '', confirmPassword: '' })
     },
@@ -60,20 +62,20 @@ export default function UsersPage() {
   })
 
   const handleChangePassword = () => {
-    if (!passwordForm.newPassword) { toast.error('请输入新密码'); return }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) { toast.error('两次密码不一致'); return }
+    if (!passwordForm.newPassword) { toast.error(t(lang, 'users.enter_new_password')); return }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) { toast.error(t(lang, 'users.password_mismatch')); return }
     if (!currentUser) return
     passwordMut.mutate({ id: currentUser.id, password: passwordForm.newPassword })
   }
 
   const handleSaveUsername = (id: string) => {
-    if (!editingUsername.trim()) { toast.error('用户名不能为空'); return }
+    if (!editingUsername.trim()) { toast.error(t(lang, 'users.username_required')); return }
     updateMut.mutate({ id, data: { username: editingUsername.trim() } })
     setEditingUser(null)
   }
 
   const handleResetPassword = (id: string) => {
-    if (!newUserPw) { toast.error('请输入新密码'); return }
+    if (!newUserPw) { toast.error(t(lang, 'users.enter_new_password')); return }
     updateMut.mutate({ id, data: { password: newUserPw } })
     setResettingPw(null)
     setNewUserPw('')
@@ -82,13 +84,13 @@ export default function UsersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">用户管理</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">{t(lang, 'users.title')}</h2>
         {currentUser?.is_admin && (
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            <Plus size={16} /> 新建用户
+            <Plus size={16} /> {t(lang, 'users.new_user')}
           </button>
         )}
       </div>
@@ -96,17 +98,17 @@ export default function UsersPage() {
       {/* Create Form */}
       {showCreate && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">新建用户</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t(lang, 'users.new_user')}</h3>
           <div className="flex flex-wrap gap-3 mb-3">
             <input
-              placeholder="用户名"
+              placeholder={t(lang, 'users.username')}
               value={form.username}
               onChange={e => setForm({ ...form, username: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <input
               type="password"
-              placeholder="密码"
+              placeholder={t(lang, 'users.password')}
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -117,7 +119,7 @@ export default function UsersPage() {
                 checked={form.is_admin}
                 onChange={e => setForm({ ...form, is_admin: e.target.checked })}
               />
-              管理员
+              {t(lang, 'users.admin')}
             </label>
           </div>
           <div className="flex gap-2">
@@ -126,9 +128,9 @@ export default function UsersPage() {
               disabled={createMut.isPending}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {createMut.isPending ? '创建中…' : '创建'}
+              {createMut.isPending ? t(lang, 'users.creating') : t(lang, 'users.create')}
             </button>
-            <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">取消</button>
+            <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">{t(lang, 'common.cancel')}</button>
           </div>
         </div>
       )}
@@ -136,16 +138,16 @@ export default function UsersPage() {
       {/* List */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {isLoading ? (
-          <div className="p-5 text-sm text-gray-400">加载中…</div>
+          <div className="p-5 text-sm text-gray-400">{t(lang, 'common.loading')}</div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">用户</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">角色</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">状态</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">创建时间</th>
-                <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-3">操作</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'users.username')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'users.role')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'common.status')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'keys.created_at')}</th>
+                <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -172,13 +174,13 @@ export default function UsersPage() {
                         <span className="text-sm font-medium text-gray-800">{u.username}</span>
                       )}
                       {u.id === currentUser?.id && (
-                        <span className="text-xs text-indigo-500">(你)</span>
+                        <span className="text-xs text-indigo-500">{t(lang, 'users.you')}</span>
                       )}
                       {currentUser?.is_admin && u.id !== currentUser?.id && editingUser !== u.id && (
                         <button
                           onClick={() => { setEditingUser(u.id); setEditingUsername(u.username) }}
                           className="p-0.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded"
-                          title="编辑用户名"
+                          title={t(lang, 'users.edit_username')}
                         >
                           <Pencil size={12} />
                         </button>
@@ -190,7 +192,7 @@ export default function UsersPage() {
                       u.is_admin ? 'bg-purple-50 text-purple-700' : 'bg-gray-100 text-gray-600'
                     }`}>
                       {u.is_admin ? <Shield size={12} /> : <UserIcon size={12} />}
-                      {u.is_admin ? '管理员' : '普通用户'}
+                      {u.is_admin ? t(lang, 'users.admin_role') : t(lang, 'users.user_role')}
                     </span>
                   </td>
                   <td className="px-5 py-3">
@@ -199,7 +201,7 @@ export default function UsersPage() {
                         {u.enabled ? <ToggleRight size={20} className="text-green-500" /> : <ToggleLeft size={20} />}
                       </button>
                     ) : (
-                      u.enabled ? <span className="text-xs text-green-600">启用</span> : <span className="text-xs text-red-500">禁用</span>
+                      u.enabled ? <span className="text-xs text-green-600">{t(lang, 'users.enabled')}</span> : <span className="text-xs text-red-500">{t(lang, 'users.disabled')}</span>
                     )}
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-400">{u.created_at}</td>
@@ -211,7 +213,7 @@ export default function UsersPage() {
                             <div className="flex items-center gap-1">
                               <input
                                 type="password"
-                                placeholder="新密码"
+                                placeholder={t(lang, 'users.new_password')}
                                 value={newUserPw}
                                 onChange={e => setNewUserPw(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') handleResetPassword(u.id); if (e.key === 'Escape') { setResettingPw(null); setNewUserPw('') } }}
@@ -225,13 +227,13 @@ export default function UsersPage() {
                             <button
                               onClick={() => setResettingPw(u.id)}
                               className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-                              title="重置密码"
+                              title={t(lang, 'users.reset_password')}
                             >
                               <Key size={16} />
                             </button>
                           )}
                           <button
-                            onClick={() => { if (confirm('删除用户？')) deleteMut.mutate(u.id) }}
+                            onClick={() => { if (confirm(t(lang, 'users.delete_confirm'))) deleteMut.mutate(u.id) }}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <Trash2 size={16} />
@@ -250,13 +252,13 @@ export default function UsersPage() {
       {/* Change Password */}
       <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">修改密码</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{t(lang, 'users.change_password')}</h3>
           {!showPasswordChange && (
             <button
               onClick={() => setShowPasswordChange(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
             >
-              <Key size={14} /> 修改密码
+              <Key size={14} /> {t(lang, 'users.change_password')}
             </button>
           )}
         </div>
@@ -264,14 +266,14 @@ export default function UsersPage() {
           <div className="mt-3 flex flex-wrap gap-3">
             <input
               type="password"
-              placeholder="新密码"
+              placeholder={t(lang, 'users.new_password')}
               value={passwordForm.newPassword}
               onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <input
               type="password"
-              placeholder="确认密码"
+              placeholder={t(lang, 'users.confirm_password')}
               value={passwordForm.confirmPassword}
               onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -281,13 +283,13 @@ export default function UsersPage() {
               disabled={passwordMut.isPending}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {passwordMut.isPending ? '修改中…' : '确认修改'}
+              {passwordMut.isPending ? t(lang, 'users.changing') : t(lang, 'users.confirm_change')}
             </button>
             <button
               onClick={() => { setShowPasswordChange(false); setPasswordForm({ newPassword: '', confirmPassword: '' }) }}
               className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg"
             >
-              取消
+              {t(lang, 'common.cancel')}
             </button>
           </div>
         )}
