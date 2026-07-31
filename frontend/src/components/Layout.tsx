@@ -1,21 +1,23 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { getStatus } from '../lib/api'
-import { LayoutDashboard, Globe, Server, Users, BarChart3, LogOut } from 'lucide-react'
+import { LayoutDashboard, Globe, Server, Users, BarChart3, LogOut, Languages } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useI18n, t, type MessageKey } from '../lib/i18n'
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: '仪表板' },
-  { to: '/endpoints', icon: Globe, label: '端点' },
-  { to: '/providers', icon: Server, label: 'Provider' },
-  { to: '/usage/my', icon: BarChart3, label: '我的用量' },
-  { to: '/usage/shared', icon: BarChart3, label: '分享用量' },
-  { to: '/users', icon: Users, label: '用户' },
-]
+  { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard' },
+  { to: '/endpoints', icon: Globe, label: 'nav.endpoints' },
+  { to: '/providers', icon: Server, label: 'nav.providers' },
+  { to: '/usage/my', icon: BarChart3, label: 'nav.usage.my' },
+  { to: '/usage/shared', icon: BarChart3, label: 'nav.usage.shared' },
+  { to: '/users', icon: Users, label: 'nav.users' },
+] as const
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { lang, setLang } = useI18n()
   const [version, setVersion] = useState<string>('')
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function Layout() {
             OLR
             {version && <span className="ml-1.5 text-xs font-normal text-gray-400 align-middle">v{version}</span>}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">管理控制台</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t(lang, 'app.console')}</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map(({ to, icon: Icon, label }) => (
@@ -52,20 +54,30 @@ export default function Layout() {
               }
             >
               <Icon size={18} />
-              {label}
+              {t(lang, label as MessageKey)}
             </NavLink>
           ))}
         </nav>
         <div className="p-3 border-t border-gray-100">
+          <div className="flex items-center justify-between px-3 py-1">
+            <button
+              onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+              className="flex items-center gap-2 text-xs text-gray-400 hover:text-indigo-600 transition-colors"
+              title={t(lang, 'action.language')}
+            >
+              <Languages size={14} />
+              {lang === 'zh' ? 'EN' : '中文'}
+            </button>
+          </div>
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-sm font-semibold">
               {user?.username?.[0]?.toUpperCase() || '?'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
-              <p className="text-xs text-gray-400">{user?.is_admin ? '管理员' : '用户'}</p>
+              <p className="text-xs text-gray-400">{user?.is_admin ? t(lang, 'role.admin') : t(lang, 'role.user')}</p>
             </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors" title="退出">
+            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors" title={t(lang, 'action.logout')}>
               <LogOut size={16} />
             </button>
           </div>
