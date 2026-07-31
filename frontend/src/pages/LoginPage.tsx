@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { login } from '../lib/api'
 import { toast } from 'sonner'
 import { LogIn } from 'lucide-react'
+import { useI18n, t } from '../lib/i18n'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { setAuth } = useAuth()
   const navigate = useNavigate()
+  const { lang } = useI18n()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,10 +20,10 @@ export default function LoginPage() {
     try {
       const res = await login(username, password)
       setAuth(res.token, res.user)
-      toast.success('登录成功')
+      toast.success(t(lang, 'login.success'))
       navigate('/dashboard')
     } catch (err: any) {
-      toast.error(err.message || '登录失败')
+      toast.error(err.message || t(lang, 'login.failed'))
     } finally {
       setLoading(false)
     }
@@ -36,11 +38,11 @@ export default function LoginPage() {
               <LogIn size={24} className="text-indigo-600" />
             </div>
             <h1 className="text-xl font-semibold text-gray-800">OpenLocalRouter</h1>
-            <p className="text-sm text-gray-400 mt-1">登录管理控制台</p>
+            <p className="text-sm text-gray-400 mt-1">{t(lang, 'login.subtitle')}</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t(lang, 'login.username')}</label>
               <input
                 type="text"
                 value={username}
@@ -51,7 +53,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t(lang, 'login.password')}</label>
               <input
                 type="password"
                 value={password}
@@ -66,7 +68,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-2 px-4 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? '登录中…' : '登录'}
+              {loading ? t(lang, 'login.logging_in') : t(lang, 'login.login')}
             </button>
           </form>
         </div>

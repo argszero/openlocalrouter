@@ -5,12 +5,14 @@ import type { Endpoint } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, Trash2, Key, ToggleLeft, ToggleRight, Copy, Check } from 'lucide-react'
+import { useI18n, t } from '../lib/i18n'
 
 const PROTOCOLS = ['openai_chat', 'openai_responses', 'anthropic_messages']
 
 export default function EndpointsPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { lang } = useI18n()
   const { data, isLoading } = useQuery({ queryKey: ['endpoints'], queryFn: getEndpoints })
   const { data: serverInfo } = useQuery({ queryKey: ['serverInfo'], queryFn: getServerInfo })
   const [showCreate, setShowCreate] = useState(false)
@@ -25,7 +27,7 @@ export default function EndpointsPage() {
     mutationFn: createEndpoint,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['endpoints'] })
-      toast.success('端点已创建')
+      toast.success(t(lang, 'endpoints.created'))
       setShowCreate(false)
       setForm({ name: '', path_prefix: '', protocol: 'openai_chat' })
     },
@@ -36,7 +38,7 @@ export default function EndpointsPage() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Endpoint> & { path_prefix?: string } }) => updateEndpoint(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['endpoints'] })
-      toast.success('端点已更新')
+      toast.success(t(lang, 'endpoints.updated'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -45,7 +47,7 @@ export default function EndpointsPage() {
     mutationFn: deleteEndpoint,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['endpoints'] })
-      toast.success('端点已删除')
+      toast.success(t(lang, 'endpoints.deleted'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -61,7 +63,7 @@ export default function EndpointsPage() {
     await navigator.clipboard.writeText(text)
     setCopiedUrl(text)
     setTimeout(() => setCopiedUrl(null), 2000)
-    toast.success('已复制到剪贴板')
+    toast.success(t(lang, 'common.copied'))
   }
 
   const startEdit = (ep: Endpoint) => {
@@ -72,7 +74,7 @@ export default function EndpointsPage() {
   }
 
   const saveEdit = (id: string) => {
-    if (!editName.trim()) { toast.error('名称不能为空'); return }
+    if (!editName.trim()) { toast.error(t(lang, 'common.name_required')); return }
     updateMut.mutate({
       id,
       data: {
@@ -87,23 +89,23 @@ export default function EndpointsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">端点管理</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">{t(lang, 'endpoints.title')}</h2>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
         >
-          <Plus size={16} /> 新建端点
+          <Plus size={16} /> {t(lang, 'endpoints.new')}
         </button>
       </div>
 
       {/* Create Form */}
       {showCreate && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">新建端点</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t(lang, 'endpoints.new')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <div>
               <input
-                placeholder="名称"
+                placeholder={t(lang, 'endpoints.name')}
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -113,7 +115,7 @@ export default function EndpointsPage() {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 font-mono whitespace-nowrap">/u/me/</span>
                 <input
-                  placeholder="路径前缀 (如 default)"
+                  placeholder={t(lang, 'endpoints.path_prefix')}
                   value={form.path_prefix}
                   onChange={e => setForm({ ...form, path_prefix: e.target.value })}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -130,7 +132,7 @@ export default function EndpointsPage() {
           </div>
           {form.path_prefix && (
             <p className="text-xs text-gray-400 mb-3">
-              完整路径: <code className="text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">{`/u/me/${form.path_prefix.replace(/^\/+|\/+$/g, '')}` || '...'}</code>
+              {t(lang, 'endpoints.full_path')} <code className="text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">{`/u/me/${form.path_prefix.replace(/^\/+|\/+$/g, '')}` || '...'}</code>
             </p>
           )}
           <div className="flex gap-2">
@@ -139,10 +141,10 @@ export default function EndpointsPage() {
               disabled={createMut.isPending}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {createMut.isPending ? '创建中…' : '创建'}
+              {createMut.isPending ? t(lang, 'endpoints.creating') : t(lang, 'endpoints.create')}
             </button>
             <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">
-              取消
+              {t(lang, 'common.cancel')}
             </button>
           </div>
         </div>
@@ -151,19 +153,19 @@ export default function EndpointsPage() {
       {/* List */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {isLoading ? (
-          <div className="p-5 text-sm text-gray-400">加载中…</div>
+          <div className="p-5 text-sm text-gray-400">{t(lang, 'common.loading')}</div>
         ) : !data?.length ? (
-          <div className="p-5 text-sm text-gray-400">暂无端点，点击「新建端点」开始</div>
+          <div className="p-5 text-sm text-gray-400">{t(lang, 'endpoints.empty')}</div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">名称</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">路径</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">协议</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">连接地址</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">状态</th>
-                <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-3">操作</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'endpoints.name')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'endpoints.path')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'endpoints.protocol')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'endpoints.base_url')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'common.status')}</th>
+                <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -179,7 +181,7 @@ export default function EndpointsPage() {
                         autoFocus
                       />
                     ) : (
-                      <span className="cursor-pointer hover:text-indigo-600" onClick={() => startEdit(ep)} title="点击编辑">
+                      <span className="cursor-pointer hover:text-indigo-600" onClick={() => startEdit(ep)} title={t(lang, 'endpoints.click_edit')}>
                         {ep.name}
                       </span>
                     )}
@@ -213,13 +215,13 @@ export default function EndpointsPage() {
                           onClick={() => saveEdit(ep.id)}
                           className="px-2 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
                         >
-                          保存
+                          {t(lang, 'common.save')}
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
                           className="px-2 py-1 text-gray-500 text-xs hover:bg-gray-100 rounded"
                         >
-                          取消
+                          {t(lang, 'common.cancel')}
                         </button>
                       </div>
                     ) : (
@@ -236,7 +238,7 @@ export default function EndpointsPage() {
                       <button
                         onClick={() => handleCopy(getProxyUrl(ep))}
                         className="p-1 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded transition-colors flex-shrink-0"
-                        title="复制连接地址"
+                        title={t(lang, 'endpoints.copy_url')}
                       >
                         {copiedUrl === getProxyUrl(ep) ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                       </button>
@@ -261,10 +263,10 @@ export default function EndpointsPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('确定删除此端点？')) deleteMut.mutate(ep.id)
+                          if (confirm(t(lang, 'endpoints.delete_confirm'))) deleteMut.mutate(ep.id)
                         }}
                         className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="删除"
+                        title={t(lang, 'common.delete')}
                       >
                         <Trash2 size={16} />
                       </button>
