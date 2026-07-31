@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getMyUsageSummary, getMyUsageTrend, getMyUsageTrendBreakdown, getMyUsageRecords } from '../lib/api'
 import type { TimeSeriesBreakdown } from '../lib/api'
 import { Zap, ArrowUpRight, Cpu, MousePointerClick, Brain, Calendar, ChevronLeft, ChevronRight, Filter, XCircle } from 'lucide-react'
+import { useI18n, t, tf } from '../lib/i18n'
 
 function formatTokens(n: number) { if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'; if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k'; return String(n) }
 function formatDate(s: string) { return s.replace('T', ' ').slice(0, 16) }
@@ -16,8 +17,9 @@ type ColumnFilter = { model: string; provider: string; key: string }
 
 // ── SVG Trend Chart ──────────────────────────────────
 function TrendChart({ series, height }: { series: { label: string; color: string; points: { ts: string; val: number }[] }[]; height: number }) {
+  const { lang } = useI18n()
   const allPoints = series.flatMap(s => s.points)
-  if (allPoints.length === 0) return <div className="text-sm text-gray-400 py-8 text-center">暂无趋势数据</div>
+  if (allPoints.length === 0) return <div className="text-sm text-gray-400 py-8 text-center">{t(lang, 'usage.no_trend_data')}</div>
 
   const timestamps = [...new Set(allPoints.map(p => p.ts))].sort()
   const maxVal = Math.max(1, ...allPoints.map(p => p.val))
@@ -88,6 +90,7 @@ export default function UsageMyPage() {
   const [trendMode, setTrendMode] = useState<'total' | 'model' | 'key'>('total')
   const [filters, setFilters] = useState<ColumnFilter>({ model: '', provider: '', key: '' })
   const [showFilters, setShowFilters] = useState(false)
+  const { lang } = useI18n()
   const limit = 25
 
   // Summary + records (existing)
@@ -163,14 +166,14 @@ export default function UsageMyPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">我的用量</h2>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">{t(lang, 'usage.title')}</h2>
       <div className="flex items-center gap-2 mb-4">
         <Calendar size={14} className="text-gray-400" />
         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0) }} className="px-2 py-1 border border-gray-300 rounded text-xs" />
         <span className="text-gray-300">{'—'}</span>
         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0) }} className="px-2 py-1 border border-gray-300 rounded text-xs" />
-        <button onClick={() => { setDateFrom(daysAgo(7)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">7天</button>
-        <button onClick={() => { setDateFrom(daysAgo(30)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">30天</button>
+        <button onClick={() => { setDateFrom(daysAgo(7)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">{t(lang, 'usage.days7')}</button>
+        <button onClick={() => { setDateFrom(daysAgo(30)); setDateTo(todayStr()) }} className="px-2 py-1 text-xs border rounded hover:bg-gray-50">{t(lang, 'usage.days30')}</button>
       </div>
 
       {/* Stat cards */}
@@ -185,7 +188,7 @@ export default function UsageMyPage() {
       {/* Trend chart */}
       <div className="bg-white rounded-xl border p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700">Token 趋势</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{t(lang, 'usage.token_trend')}</h3>
           <div className="flex gap-1">
             {(['total','model','key'] as const).map(m => (
               <button
@@ -195,7 +198,7 @@ export default function UsageMyPage() {
                   trendMode === m ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {m === 'total' ? '总计' : m === 'model' ? '按模型' : '按Key'}
+                {m === 'total' ? t(lang, 'usage.trend_total') : m === 'model' ? t(lang, 'usage.trend_by_model') : t(lang, 'usage.trend_by_key')}
               </button>
             ))}
           </div>
@@ -206,12 +209,12 @@ export default function UsageMyPage() {
 
       {/* Model breakdown */}
       <div className="bg-white rounded-xl border p-4 mb-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Token / Model</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">{t(lang, 'usage.token_model')}</h3>
         {groups.slice(0, 10).map(g => (
           <div key={g.key} className="flex items-center gap-2 py-1.5 text-xs">
             <span className="flex-1 text-gray-700 truncate">{g.key}</span>
             <span className="text-gray-500">{formatTokens(g.total_input_tokens + g.total_output_tokens)}</span>
-            <span className="text-gray-300">{g.count}次</span>
+            <span className="text-gray-300">{tf(lang, 'usage.count_suffix', { n: g.count })}</span>
           </div>
         ))}
       </div>
@@ -220,8 +223,8 @@ export default function UsageMyPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="px-5 py-3 border-b flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-700">明细</h3>
-            {records && <span className="text-xs text-gray-400">共 {records.total} 条</span>}
+            <h3 className="text-sm font-semibold text-gray-700">{t(lang, 'usage.detail')}</h3>
+            {records && <span className="text-xs text-gray-400">{tf(lang, 'usage.total_records', { n: records.total })}</span>}
           </div>
           <button
             onClick={() => { setShowFilters(!showFilters); if (!showFilters) clearFilters() }}
@@ -230,7 +233,7 @@ export default function UsageMyPage() {
             }`}
           >
             <Filter size={12} />
-            筛选
+            {t(lang, 'usage.filter')}
             {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
           </button>
         </div>
@@ -239,27 +242,27 @@ export default function UsageMyPage() {
           <div className="px-5 py-2 border-b bg-gray-50/30">
             <div className="flex items-center gap-2 flex-wrap">
               <FilterInput label="Key" value={filters.key} onChange={v => setFilter('key', v)} />
-              <FilterInput label="模型" value={filters.model} onChange={v => setFilter('model', v)} />
+              <FilterInput label={t(lang, 'usage.model')} value={filters.model} onChange={v => setFilter('model', v)} />
               <FilterInput label="Provider" value={filters.provider} onChange={v => setFilter('provider', v)} />
               <button
                 onClick={clearFilters}
                 className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <XCircle size={12} />
-                清除
+                {t(lang, 'usage.clear')}
               </button>
             </div>
           </div>
         )}
 
-        {isLoading ? <div className="p-5 text-sm text-gray-400">加载中...</div> : !records?.records?.length ? (
-          <div className="p-8 text-center text-sm text-gray-400">暂无数据</div>
+        {isLoading ? <div className="p-5 text-sm text-gray-400">{t(lang, 'common.loading')}</div> : !records?.records?.length ? (
+          <div className="p-8 text-center text-sm text-gray-400">{t(lang, 'usage.no_data')}</div>
         ) : (
           <table className="w-full">
             <thead><tr className="border-b border-gray-100">
-              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">时间</th>
+              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">{t(lang, 'usage.time')}</th>
               <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">Key</th>
-              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">模型</th>
+              <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">{t(lang, 'usage.model')}</th>
               <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-2">Provider</th>
               <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-2">Input</th>
               <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-2">Output</th>
@@ -282,9 +285,9 @@ export default function UsageMyPage() {
         )}
         {totalPages > 1 && (
           <div className="px-5 py-3 border-t flex items-center justify-between bg-gray-50/30">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30"><ChevronLeft size={14} /> 上一页</button>
-            <span className="text-xs text-gray-400">第 {page + 1}/{totalPages} 页</span>
-            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30">下一页 <ChevronRight size={14} /></button>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30"><ChevronLeft size={14} /> {t(lang, 'usage.prev')}</button>
+            <span className="text-xs text-gray-400">{tf(lang, 'usage.page_info', { cur: page + 1, total: totalPages })}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border rounded-lg disabled:opacity-30">{t(lang, 'usage.next')} <ChevronRight size={14} /></button>
           </div>
         )}
       </div>
@@ -293,6 +296,7 @@ export default function UsageMyPage() {
 }
 
 function FilterInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const { lang } = useI18n()
   return (
     <div className="flex items-center gap-1">
       <label className="text-xs text-gray-400 whitespace-nowrap">{label}</label>
@@ -300,7 +304,7 @@ function FilterInput({ label, value, onChange }: { label: string; value: string;
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="筛选…"
+        placeholder={t(lang, 'usage.filter_placeholder')}
         className="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
       />
     </div>

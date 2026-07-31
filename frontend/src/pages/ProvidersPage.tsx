@@ -11,17 +11,20 @@ import {
   Plus, Trash2, ToggleLeft, ToggleRight,
   Edit3, Check, Store, Globe, Server, X, Zap, Brain,
 } from 'lucide-react'
+import { useI18n, t, tf, type Lang } from '../lib/i18n'
 
-const PROTOCOL_LABELS: Record<string, { label: string; desc: string }> = {
-  openai_chat: { label: 'OpenAI Chat', desc: 'Chat Completions API — 兼容性最广' },
-  openai_responses: { label: 'OpenAI Responses', desc: 'Responses API — 原生支持多模态' },
-  anthropic_messages: { label: 'Anthropic Messages', desc: 'Messages API — Claude 原生协议' },
+const PROTOCOL_LABELS: Record<string, string> = {
+  openai_chat: 'OpenAI Chat',
+  openai_responses: 'OpenAI Responses',
+  anthropic_messages: 'Anthropic Messages',
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  official: '官方',
-  cloud: '云平台',
-  custom: '自定义',
+function protocolLabel(lang: Lang, key: string): { label: string; desc: string } {
+  return { label: PROTOCOL_LABELS[key] || key, desc: t(lang, `proto.${key}.desc` as any) }
+}
+
+function categoryLabel(lang: Lang, cat: string): string {
+  return t(lang, `cat.${cat}` as any)
 }
 
 // ── Pending Model (local state during creation) ──────────
@@ -38,6 +41,7 @@ interface PendingModel {
 
 export default function ProvidersPage() {
   const queryClient = useQueryClient()
+  const { lang } = useI18n()
   const { data: providers, isLoading } = useQuery({ queryKey: ['providers'], queryFn: getProviders })
   const { data: endpoints } = useQuery({ queryKey: ['endpoints'], queryFn: getEndpoints })
   const [showWizard, setShowWizard] = useState(false)
@@ -47,7 +51,7 @@ export default function ProvidersPage() {
     mutationFn: deleteProvider,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
-      toast.success('Provider 已删除')
+      toast.success(t(lang, 'providers.deleted'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -56,7 +60,7 @@ export default function ProvidersPage() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Provider> }) => updateProvider(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
-      toast.success('Provider 已更新')
+      toast.success(t(lang, 'providers.updated'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -64,12 +68,12 @@ export default function ProvidersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Provider 管理</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">{t(lang, 'providers.title')}</h2>
         <button
           onClick={() => setShowWizard(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
         >
-          <Plus size={16} /> 添加 Provider
+          <Plus size={16} /> {t(lang, 'providers.add')}
         </button>
       </div>
 
@@ -87,17 +91,17 @@ export default function ProvidersPage() {
       {/* Provider List */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="text-sm text-gray-400">加载中…</div>
+          <div className="text-sm text-gray-400">{t(lang, 'common.loading')}</div>
         ) : !providers?.length ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <Server size={40} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500 font-medium mb-1">还没有 Provider</p>
-            <p className="text-sm text-gray-400 mb-4">添加上游 AI 服务商，如 OpenAI、Anthropic 等</p>
+            <p className="text-gray-500 font-medium mb-1">{t(lang, 'providers.empty_title')}</p>
+            <p className="text-sm text-gray-400 mb-4">{t(lang, 'providers.empty_hint')}</p>
             <button
               onClick={() => setShowWizard(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
             >
-              <Store size={16} /> 添加 Provider
+              <Store size={16} /> {t(lang, 'providers.add')}
             </button>
           </div>
         ) : (
@@ -114,7 +118,7 @@ export default function ProvidersPage() {
                       <div className="flex flex-wrap gap-1">
                         {(p.api_types || (p.api_type ? p.api_type.split(',').filter(Boolean) : [])).map((t: string) => (
                           <span key={t} className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">
-                            {PROTOCOL_LABELS[t]?.label || t}
+                            {protocolLabel(lang, t).label}
                           </span>
                         ))}
                       </div>
@@ -124,7 +128,7 @@ export default function ProvidersPage() {
                       <div className="mt-1 space-y-0.5">
                         {Object.entries(p.api_urls).map(([proto, url]) => (
                           <p key={proto} className="text-xs text-gray-400 font-mono">
-                            <span className="text-indigo-500">{PROTOCOL_LABELS[proto]?.label || proto}:</span> {url}
+                            <span className="text-indigo-500">{protocolLabel(lang, proto).label}:</span> {url}
                           </p>
                         ))}
                       </div>
@@ -145,14 +149,14 @@ export default function ProvidersPage() {
                     className={`p-1.5 rounded-lg transition-colors ${
                       editingId === p.id ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'
                     }`}
-                    title="编辑"
+                    title={t(lang, 'providers.edit')}
                   >
                     <Edit3 size={16} />
                   </button>
                   <button
-                    onClick={() => { if (confirm('确定删除此 Provider？关联的模型也会被删除。')) deleteMut.mutate(p.id) }}
+                    onClick={() => { if (confirm(t(lang, 'providers.delete_confirm'))) deleteMut.mutate(p.id) }}
                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="删除"
+                    title={t(lang, 'common.delete')}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -182,6 +186,7 @@ export default function ProvidersPage() {
 // ── Model Count (lazy) ────────────────────────────────
 
 function ModelCount({ providerId }: { providerId: string }) {
+  const { lang } = useI18n()
   const { data } = useQuery({
     queryKey: ['providerModelCount', providerId],
     queryFn: async () => {
@@ -195,13 +200,14 @@ function ModelCount({ providerId }: { providerId: string }) {
   })
 
   if (data === undefined) return null
-  return <>{data} 个模型</>
+  return <>{tf(lang, 'providers.model_count', { n: data })}</>
 }
 
 // ── Create Wizard ──────────────────────────────────────
 
 function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const { data: presets } = useQuery({ queryKey: ['presets'], queryFn: getPresets })
+  const { lang } = useI18n()
   const [step, setStep] = useState<'preset' | 'config'>('preset')
   const [selectedPreset, setSelectedPreset] = useState<ProviderPreset | null>(null)
   const [form, setForm] = useState<{
@@ -231,7 +237,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
 
   const handlePresetSelect = (preset: ProviderPreset) => {
     setSelectedPreset(preset)
-    if (preset.name === '自定义') {
+    if (preset.name === t(lang, 'providers.preset_custom')) {
       setForm({ name: '', base_url: '', api_key: '', api_types: ['openai_chat'], api_urls: {} })
       setPendingModels([])
     } else {
@@ -289,11 +295,11 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
       }
 
       if (modelErrors > 0) {
-        toast.warning(`Provider 已创建，但 ${modelErrors} 个模型添加失败`)
+        toast.warning(tf(lang, 'providers.created_with_errors', { n: modelErrors }))
       } else if (models.length > 0) {
-        toast.success(`Provider 已创建，已添加 ${models.length} 个模型`)
+        toast.success(tf(lang, 'providers.created_with_models', { n: models.length }))
       } else {
-        toast.success('Provider 已创建')
+        toast.success(t(lang, 'providers.created'))
       }
       onCreated()
     } catch (err: any) {
@@ -307,7 +313,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
     const s = newModelSlug.trim()
     if (!s) return
     if (pendingModels.some(m => m.slug === s)) {
-      toast.error('模型 slug 已存在')
+      toast.error(t(lang, 'providers.slug_exists'))
       return
     }
     setPendingModels(prev => [...prev, {
@@ -340,14 +346,14 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
 
   const handleFetchUpstream = async () => {
     const base = form.base_url || Object.values(form.api_urls)[0] || ''
-    if (!base) { toast.error('未配置 Base URL'); return }
+    if (!base) { toast.error(t(lang, 'providers.base_url_required')); return }
     setFetchingModels(true)
     try {
       const url = base.endsWith('/models') ? base : `${base.replace(/\/+$/, '')}/models`
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (form.api_key) headers['Authorization'] = `Bearer ${form.api_key}`
       const resp = await fetch(url, { headers })
-      if (!resp.ok) { toast.error(`请求 /models 失败: ${resp.status}`); return }
+      if (!resp.ok) { toast.error(tf(lang, 'providers.fetch_models_failed_status', { status: resp.status })); return }
       const data = await resp.json()
       const modelList = data.data || data.models || data || []
       const existing = new Set(pendingModelsRef.current.map(m => m.slug))
@@ -364,8 +370,8 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
         existing.add(s)
       }
       setPendingModels(prev => [...prev, ...toAdd])
-      toast.success(`从上游获取了 ${toAdd.length} 个模型`)
-    } catch (err: any) { toast.error(`获取模型列表失败: ${err.message}`) }
+      toast.success(tf(lang, 'providers.fetched_models', { n: toAdd.length }))
+    } catch (err: any) { toast.error(tf(lang, 'providers.fetch_models_error', { msg: err.message })) }
     finally { setFetchingModels(false) }
   }
 
@@ -380,7 +386,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
           <Store size={20} className="text-indigo-500" />
           <div>
             <h3 className="text-sm font-semibold text-gray-800">
-              添加 Provider
+              {t(lang, 'providers.add')}
               {selectedPreset && <span className="text-gray-400 font-normal"> — {selectedPreset.name}</span>}
             </h3>
           </div>
@@ -388,7 +394,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
         <div className="flex items-center gap-2">
           {step === 'config' && (
             <button onClick={() => setStep('preset')} className="text-sm text-gray-500 hover:text-gray-700">
-              返回选择
+              {t(lang, 'providers.back_to_presets')}
             </button>
           )}
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
@@ -400,11 +406,11 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
       {/* Step 1: Preset Selection */}
       {step === 'preset' && (
         <div className="p-5">
-          <p className="text-sm text-gray-500 mb-4">选择一个预设快速配置，或选"自定义"手动填写</p>
+          <p className="text-sm text-gray-500 mb-4">{t(lang, 'providers.preset_hint')}</p>
           {categories.map(cat => (
             <div key={cat} className="mb-4">
               <p className="text-xs font-medium text-gray-400 uppercase mb-2">
-                {CATEGORY_LABELS[cat] || cat}
+                {categoryLabel(lang, cat)}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(presets || []).filter(p => p.category === cat).map(p => (
@@ -446,10 +452,10 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
             <Zap size={16} className="text-indigo-500 shrink-0" />
             <div>
               <span className="text-xs font-medium text-indigo-700">
-                已选中 {form.api_types.length} 个协议
+                {tf(lang, 'providers.protocols_selected', { n: form.api_types.length })}
               </span>
               <span className="text-xs text-indigo-500 ml-1">
-                — {form.api_types.map(t => PROTOCOL_LABELS[t]?.label).join('、')}
+                — {form.api_types.map(t => protocolLabel(lang, t).label).join(lang === 'zh' ? '、' : ', ')}
               </span>
             </div>
           </div>
@@ -458,12 +464,12 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
             {/* Name & API Key */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t(lang, 'providers.name')}</label>
                 <input
                   value={form.name}
                   onChange={e => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="如 OpenAI、Anthropic"
+                  placeholder={t(lang, 'providers.name_placeholder')}
                 />
               </div>
               <div>
@@ -480,10 +486,10 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
 
             {/* ── Protocol Config ── */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">协议与 URL 配置</label>
-              <p className="text-xs text-gray-400 mb-3">选择需要的协议类型，并为每种协议配置对应的 Base URL</p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t(lang, 'providers.protocol_url_config')}</label>
+              <p className="text-xs text-gray-400 mb-3">{t(lang, 'providers.protocol_url_hint')}</p>
               <div className="space-y-3">
-                {Object.entries(PROTOCOL_LABELS).map(([key, { label, desc }]) => {
+                {Object.entries(PROTOCOL_LABELS).map(([key, label]) => {
                   const checked = form.api_types.includes(key)
                   return (
                     <div
@@ -514,7 +520,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                           <p className={`text-sm font-medium ${checked ? 'text-gray-800' : 'text-gray-500'}`}>
                             {label}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{protocolLabel(lang, key).desc}</p>
                         </div>
                         {checked && (
                           <div className="flex-1 min-w-[300px]">
@@ -543,7 +549,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Brain size={14} className="text-indigo-400 shrink-0" />
-                  <p className="text-sm font-medium text-gray-700">模型</p>
+                  <p className="text-sm font-medium text-gray-700">{t(lang, 'providers.models')}</p>
                   <span className="text-xs text-gray-400">({pendingModels.length})</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -551,16 +557,16 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                     onClick={handleFetchUpstream}
                     disabled={fetchingModels || !baseUrlForFetch}
                     className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 font-medium disabled:opacity-50"
-                    title={!baseUrlForFetch ? '需要配置 Base URL' : '从上游 /models 获取'}
+                    title={!baseUrlForFetch ? t(lang, 'providers.need_base_url') : t(lang, 'providers.fetch_from_upstream')}
                   >
                     <Globe size={12} />
-                    {fetchingModels ? '获取中…' : '从上游获取'}
+                    {fetchingModels ? t(lang, 'providers.fetching') : t(lang, 'providers.fetch_upstream')}
                   </button>
                   <button
                     onClick={() => setShowAddModel(true)}
                     className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
                   >
-                    <Plus size={12} /> 手动添加
+                    <Plus size={12} /> {t(lang, 'providers.manual_add')}
                   </button>
                 </div>
               </div>
@@ -570,9 +576,9 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                 <div className="mb-3 p-4 bg-white rounded-lg border border-gray-200 space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">模型 ID (slug)</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.model_slug')}</label>
                       <input
-                        placeholder="如 gpt-4o"
+                        placeholder={t(lang, 'providers.slug_placeholder')}
                         value={newModelSlug}
                         onChange={e => setNewModelSlug(e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -580,9 +586,9 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">显示名称</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.display_name')}</label>
                       <input
-                        placeholder="如 GPT-4o"
+                        placeholder={t(lang, 'providers.display_name_placeholder')}
                         value={newModelDisplay}
                         onChange={e => setNewModelDisplay(e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -591,13 +597,13 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">
-                        上游请求模型名 <span className="text-gray-400 font-normal">（可选）</span>
+                        {t(lang, 'providers.upstream_model_name')} <span className="text-gray-400 font-normal">{t(lang, 'providers.optional')}</span>
                       </label>
                       <input
                         value={newModelUpstream}
                         onChange={e => setNewModelUpstream(e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="默认同 slug"
+                        placeholder={t(lang, 'providers.default_slug')}
                         onKeyDown={e => e.key === 'Enter' && addModel()}
                       />
                     </div>
@@ -618,7 +624,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                       disabled={!newModelSlug.trim()}
                       className="px-4 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50"
                     >
-                      添加模型
+                      {t(lang, 'providers.add_model')}
                     </button>
                     <button
                       onClick={() => {
@@ -627,7 +633,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                       }}
                       className="px-4 py-1.5 text-gray-600 text-xs rounded hover:bg-gray-100"
                     >
-                      取消
+                      {t(lang, 'common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -636,7 +642,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
               {/* Model list */}
               {pendingModels.length === 0 ? (
                 <p className="text-xs text-gray-400 py-2">
-                  尚未添加模型。点击「从上游获取」自动拉取，或「手动添加」。
+                  {t(lang, 'providers.no_models_hint')}
                 </p>
               ) : (
                 <div className="space-y-1.5">
@@ -656,7 +662,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-gray-400 mb-0.5">显示名称</label>
+                                <label className="block text-xs text-gray-400 mb-0.5">{t(lang, 'providers.display_name')}</label>
                                 <input
                                   value={editDisplay}
                                   onChange={e => setEditDisplay(e.target.value)}
@@ -664,12 +670,12 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-gray-400 mb-0.5">上游请求模型名</label>
+                                <label className="block text-xs text-gray-400 mb-0.5">{t(lang, 'providers.upstream_model_name')}</label>
                                 <input
                                   value={editUpstream}
                                   onChange={e => setEditUpstream(e.target.value)}
                                   className="w-full px-1.5 py-0.5 border border-gray-300 rounded text-xs font-mono"
-                                  placeholder="默认同 slug"
+                                  placeholder={t(lang, 'providers.default_slug')}
                                 />
                               </div>
                               <div>
@@ -687,13 +693,13 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                                 onClick={() => updatePendingModel(m.key)}
                                 className="px-2 py-0.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
                               >
-                                保存
+                                {t(lang, 'common.save')}
                               </button>
                               <button
                                 onClick={() => setEditingModelKey(null)}
                                 className="px-2 py-0.5 text-gray-500 text-xs rounded hover:bg-gray-100"
                               >
-                                取消
+                                {t(lang, 'common.cancel')}
                               </button>
                             </div>
                           </div>
@@ -710,7 +716,7 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                                   setEditUpstream(m.model_slug || '')
                                 }}
                                 className="text-gray-300 hover:text-gray-500"
-                                title="编辑模型"
+                                title={t(lang, 'providers.edit_model')}
                               >
                                 <Edit3 size={12} />
                               </button>
@@ -740,10 +746,10 @@ function CreateProviderWizard({ onClose, onCreated }: { onClose: () => void; onC
                 disabled={creating || !form.name || (!form.base_url && Object.keys(form.api_urls).length === 0)}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
-                {creating ? '创建中…' : <><Check size={16} /> 创建 Provider</>}
+                {creating ? t(lang, 'providers.creating') : <><Check size={16} /> {t(lang, 'providers.create')}</>}
               </button>
               <button onClick={onClose} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">
-                取消
+                {t(lang, 'common.cancel')}
               </button>
             </div>
           </div>
@@ -761,6 +767,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
   onClose: () => void
   onUpdated: () => void
 }) {
+  const { lang } = useI18n()
   const [form, setForm] = useState({
     name: provider.name,
     base_url: provider.base_url,
@@ -797,7 +804,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
   const updateMut = useMutation({
     mutationFn: (data: Partial<Provider>) => updateProvider(provider.id, data),
     onSuccess: () => {
-      toast.success('Provider 已更新')
+      toast.success(t(lang, 'providers.updated'))
       onUpdated()
     },
     onError: (err: Error) => toast.error(err.message),
@@ -825,17 +832,17 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
       setShowAddModel(false)
       refetchModels()
       onUpdated()
-      toast.success(`模型 "${s}" 已添加`)
+      toast.success(tf(lang, 'providers.model_added', { s }))
     } catch (err: any) { toast.error(err.message) }
   }
 
   const handleRemoveModel = async (modelId: string, modelSlug: string) => {
-    if (!confirm(`删除模型 ${modelSlug}？`)) return
+    if (!confirm(tf(lang, 'providers.model_delete_confirm', { s: modelSlug }))) return
     try {
       await deleteModel(provider.id, modelId)
       refetchModels()
       onUpdated()
-      toast.success(`模型 "${modelSlug}" 已删除`)
+      toast.success(tf(lang, 'providers.model_deleted', { s: modelSlug }))
     } catch (err: any) { toast.error(err.message) }
   }
 
@@ -861,13 +868,13 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
       setEditingModelId(null)
       refetchModels()
       onUpdated()
-      toast.success('模型已更新')
+      toast.success(t(lang, 'providers.model_updated'))
     } catch (err: any) { toast.error(err.message) }
   }
 
   const handleFetchUpstream = async () => {
     const base = form.base_url || Object.values(form.api_urls)[0] || provider.base_url
-    if (!base) { toast.error('未配置 Base URL'); return }
+    if (!base) { toast.error(t(lang, 'providers.base_url_required')); return }
     setFetchingModels(true)
     try {
       const url = base.endsWith('/models') ? base : `${base.replace(/\/+$/, '')}/models`
@@ -876,7 +883,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
         // Use current API key from form or existing provider
       }
       const resp = await fetch(url, { headers })
-      if (!resp.ok) { toast.error(`请求 /models 失败: ${resp.status}`); return }
+      if (!resp.ok) { toast.error(tf(lang, 'providers.fetch_models_failed_status', { status: resp.status })); return }
       const data = await resp.json()
       const modelList = data.data || data.models || data || []
       const existing = new Set(models.map(m => m.slug))
@@ -904,8 +911,8 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
         refetchModels()
         onUpdated()
       }
-      toast.success(`从上游获取了 ${added} 个模型`)
-    } catch (err: any) { toast.error(`获取模型列表失败: ${err.message}`) }
+      toast.success(tf(lang, 'providers.fetched_models', { n: added }))
+    } catch (err: any) { toast.error(tf(lang, 'providers.fetch_models_error', { msg: err.message })) }
     finally { setFetchingModels(false) }
   }
 
@@ -913,10 +920,10 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
     <div className="border-t border-gray-100 p-4 bg-gray-50/30 space-y-6">
       {/* Provider edit fields */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">编辑 Provider</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">{t(lang, 'providers.edit_title')}</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">名称</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.name')}</label>
             <input
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
@@ -932,19 +939,19 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">API Key (留空不修改)</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.api_key_unchanged')}</label>
             <input
               type="password"
               value={form.api_key}
               onChange={e => setForm({ ...form, api_key: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="留空则保持原值"
+              placeholder={t(lang, 'providers.api_key_keep')}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">协议类型（可多选）</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.protocol_types')}</label>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(PROTOCOL_LABELS).map(([k, v]) => {
+              {Object.entries(PROTOCOL_LABELS).map(([k]) => {
                 const checked = form.api_types.includes(k)
                 return (
                   <label
@@ -971,7 +978,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                     }`}>
                       {checked && <Check size={10} strokeWidth={3} className="text-white" />}
                     </span>
-                    {v.label}
+                    {protocolLabel(lang, k).label}
                     {(form.api_urls[k]) && (
                       <span className="text-gray-400 font-mono">— {form.api_urls[k]}</span>
                     )}
@@ -984,7 +991,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                 {form.api_types.map(proto => (
                   <div key={proto} className="flex items-center gap-2">
                     <span className="text-xs font-medium text-indigo-600 w-28 shrink-0">
-                      {PROTOCOL_LABELS[proto]?.label}
+                      {protocolLabel(lang, proto).label}
                     </span>
                     <input
                       value={form.api_urls[proto] || ''}
@@ -1015,9 +1022,9 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
             disabled={updateMut.isPending}
             className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {updateMut.isPending ? '保存中…' : '保存'}
+            {updateMut.isPending ? t(lang, 'providers.saving') : t(lang, 'common.save')}
           </button>
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">取消</button>
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">{t(lang, 'common.cancel')}</button>
         </div>
       </div>
 
@@ -1026,7 +1033,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Brain size={14} className="text-indigo-400 shrink-0" />
-            <p className="text-sm font-medium text-gray-700">模型</p>
+            <p className="text-sm font-medium text-gray-700">{t(lang, 'providers.models')}</p>
             <span className="text-xs text-gray-400">({models.length})</span>
           </div>
           <div className="flex items-center gap-2">
@@ -1036,13 +1043,13 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
               className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 font-medium disabled:opacity-50"
             >
               <Globe size={12} />
-              {fetchingModels ? '获取中…' : '从上游获取'}
+              {fetchingModels ? t(lang, 'providers.fetching') : t(lang, 'providers.fetch_upstream')}
             </button>
             <button
               onClick={() => setShowAddModel(true)}
               className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
             >
-              <Plus size={12} /> 手动添加
+              <Plus size={12} /> {t(lang, 'providers.manual_add')}
             </button>
           </div>
         </div>
@@ -1052,9 +1059,9 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
           <div className="mb-3 p-4 bg-white rounded-lg border border-gray-200 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">模型 ID (slug)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.model_slug')}</label>
                 <input
-                  placeholder="如 gpt-4o"
+                  placeholder={t(lang, 'providers.slug_placeholder')}
                   value={newModelSlug}
                   onChange={e => setNewModelSlug(e.target.value)}
                   className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1062,9 +1069,9 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">显示名称</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t(lang, 'providers.display_name')}</label>
                 <input
-                  placeholder="如 GPT-4o"
+                  placeholder={t(lang, 'providers.display_name_placeholder')}
                   value={newModelDisplay}
                   onChange={e => setNewModelDisplay(e.target.value)}
                   className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1073,13 +1080,13 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  上游请求模型名 <span className="text-gray-400 font-normal">（可选）</span>
+                  {t(lang, 'providers.upstream_model_name')} <span className="text-gray-400 font-normal">{t(lang, 'providers.optional')}</span>
                 </label>
                 <input
                   value={newModelUpstream}
                   onChange={e => setNewModelUpstream(e.target.value)}
                   className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="默认同 slug"
+                  placeholder={t(lang, 'providers.default_slug')}
                   onKeyDown={e => e.key === 'Enter' && addModel()}
                 />
               </div>
@@ -1100,7 +1107,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                 disabled={!newModelSlug.trim()}
                 className="px-4 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50"
               >
-                添加模型
+                {t(lang, 'providers.add_model')}
               </button>
               <button
                 onClick={() => {
@@ -1109,7 +1116,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                 }}
                 className="px-4 py-1.5 text-gray-600 text-xs rounded hover:bg-gray-100"
               >
-                取消
+                {t(lang, 'common.cancel')}
               </button>
             </div>
           </div>
@@ -1118,7 +1125,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
         {/* Model list */}
         {models.length === 0 ? (
           <p className="text-xs text-gray-400 py-2">
-            尚无模型。点击「从上游获取」自动拉取，或「手动添加」。
+            {t(lang, 'providers.no_models_edit')}
           </p>
         ) : (
           <div className="space-y-1.5">
@@ -1139,7 +1146,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-400 mb-0.5">显示名称</label>
+                            <label className="block text-xs text-gray-400 mb-0.5">{t(lang, 'providers.display_name')}</label>
                             <input
                               value={editDisplay}
                               onChange={e => setEditDisplay(e.target.value)}
@@ -1147,12 +1154,12 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-400 mb-0.5">上游请求模型名</label>
+                            <label className="block text-xs text-gray-400 mb-0.5">{t(lang, 'providers.upstream_model_name')}</label>
                             <input
                               value={editUpstream}
                               onChange={e => setEditUpstream(e.target.value)}
                               className="w-full px-1.5 py-0.5 border border-gray-300 rounded text-xs font-mono"
-                              placeholder="默认同 slug"
+                              placeholder={t(lang, 'providers.default_slug')}
                             />
                           </div>
                           <div>
@@ -1170,10 +1177,10 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                             onClick={() => handleUpdateModel(m)}
                             className="px-2 py-0.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
                           >
-                            保存
+                            {t(lang, 'common.save')}
                           </button>
                           <button onClick={() => setEditingModelId(null)} className="px-2 py-0.5 text-gray-500 text-xs rounded hover:bg-gray-100">
-                            取消
+                            {t(lang, 'common.cancel')}
                           </button>
                         </div>
                       </div>
@@ -1190,7 +1197,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                               setEditUpstream('')
                             }}
                             className="text-gray-300 hover:text-gray-500"
-                            title="编辑模型"
+                            title={t(lang, 'providers.edit_model')}
                           >
                             <Edit3 size={12} />
                           </button>
@@ -1223,7 +1230,7 @@ function EditProviderForm({ provider, endpoints, onClose, onUpdated }: {
                                 ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
                                 : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
                             }`}
-                            title={`${visible ? '在' : '不在'} ${ep.name} 中可见`}
+                            title={tf(lang, visible ? 'providers.visible_in' : 'providers.visible_not_in', { name: ep.name })}
                           >
                             {ep.name}
                           </button>
