@@ -6,11 +6,13 @@ import { useAuth } from '../lib/auth'
 import { toast } from 'sonner'
 import { Plus, Trash2, Copy, Check, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useI18n, t } from '../lib/i18n'
 
 export default function ApiKeysPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const { user } = useAuth()
+  const { lang } = useI18n()
   const { data: endpoints } = useQuery({ queryKey: ['endpoints'], queryFn: getEndpoints })
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: getUsers })
   const { data: keys, isLoading } = useQuery({ queryKey: ['apiKeys', id], queryFn: () => getApiKeys(id!), enabled: !!id })
@@ -58,7 +60,7 @@ export default function ApiKeysPage() {
       createApiKey(id!, name, assignedTo || undefined),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys', id] })
-      toast.success('API Key 已创建')
+      toast.success(t(lang, 'keys.created'))
       setNewKey(data.key)
       setName('')
       setAssignedTo('')
@@ -72,7 +74,7 @@ export default function ApiKeysPage() {
       updateApiKey(id!, keyId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys', id] })
-      toast.success('已更新')
+      toast.success(t(lang, 'keys.updated'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -81,13 +83,13 @@ export default function ApiKeysPage() {
     mutationFn: (keyId: string) => deleteApiKey(id!, keyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys', id] })
-      toast.success('API Key 已删除')
+      toast.success(t(lang, 'keys.deleted'))
     },
     onError: (err: Error) => toast.error(err.message),
   })
 
   const handleSaveName = (keyId: string) => {
-    if (!editingName.trim()) { toast.error('名称不能为空'); return }
+    if (!editingName.trim()) { toast.error(t(lang, 'common.name_required')); return }
     updateMut.mutate({ keyId, data: { name: editingName.trim() } })
     setEditingKeyId(null)
   }
@@ -96,7 +98,7 @@ export default function ApiKeysPage() {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-    toast.success('已复制到剪贴板')
+    toast.success(t(lang, 'common.copied'))
   }
 
   const usernameById = (userId: string) => {
@@ -109,7 +111,7 @@ export default function ApiKeysPage() {
       <div className="flex items-center gap-3 mb-6">
         <Link to="/endpoints" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={20} /></Link>
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">API Key 管理</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">{t(lang, 'keys.title')}</h2>
           {endpoint && <p className="text-sm text-gray-400 mt-0.5">{endpoint.name} — {endpoint.listen_path}</p>}
         </div>
       </div>
@@ -117,7 +119,7 @@ export default function ApiKeysPage() {
       {/* New Key Display */}
       {newKey && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-4">
-          <p className="text-sm font-medium text-green-800 mb-2">✅ API Key 已创建！请立即复制，之后将无法再次查看：</p>
+          <p className="text-sm font-medium text-green-800 mb-2">{t(lang, 'keys.created_notice')}</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 px-3 py-2 bg-white border border-green-200 rounded text-sm font-mono text-green-900 break-all">
               {newKey}
@@ -137,7 +139,7 @@ export default function ApiKeysPage() {
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
         >
-          <Plus size={16} /> 生成 API Key
+          <Plus size={16} /> {t(lang, 'keys.generate')}
         </button>
       </div>
 
@@ -147,7 +149,7 @@ export default function ApiKeysPage() {
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <input
-                placeholder='Key 名称 (如 "Chat App")'
+                placeholder={t(lang, 'keys.name_placeholder')}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -157,7 +159,7 @@ export default function ApiKeysPage() {
                 onChange={e => setAssignedTo(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[140px]"
               >
-                <option value="">分配给自己</option>
+                <option value="">{t(lang, 'keys.assign_self')}</option>
                 {users?.filter(u => u.enabled).map(u => (
                   <option key={u.id} value={u.id}>{u.username}</option>
                 ))}
@@ -167,11 +169,11 @@ export default function ApiKeysPage() {
                 disabled={createMut.isPending || !name}
                 className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
               >
-                {createMut.isPending ? '生成中…' : '生成'}
+                {createMut.isPending ? t(lang, 'keys.generating') : t(lang, 'keys.create')}
               </button>
-              <button onClick={() => { setShowCreate(false); setAssignedTo('') }} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">取消</button>
+              <button onClick={() => { setShowCreate(false); setAssignedTo('') }} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">{t(lang, 'common.cancel')}</button>
             </div>
-            <p className="text-xs text-gray-400">选择用户后，该 Key 将分配给对应用户使用。"分配给自己" 即自己使用。</p>
+            <p className="text-xs text-gray-400">{t(lang, 'keys.assign_hint')}</p>
           </div>
         </div>
       )}
@@ -179,21 +181,21 @@ export default function ApiKeysPage() {
       {/* Key List */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {isLoading ? (
-          <div className="p-5 text-sm text-gray-400">加载中…</div>
+          <div className="p-5 text-sm text-gray-400">{t(lang, 'common.loading')}</div>
         ) : !keys?.length ? (
-          <div className="p-5 text-sm text-gray-400">暂无 API Key</div>
+          <div className="p-5 text-sm text-gray-400">{t(lang, 'keys.empty')}</div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">名称</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'keys.name_col')}</th>
                 <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">Key</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">分配给</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">状态</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">创建时间</th>
-                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">最后使用</th>
-                <th className="text-center text-xs font-medium text-gray-400 uppercase px-5 py-3">本月用量</th>
-                <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-3">操作</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'keys.assigned_to')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'common.status')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'keys.created_at')}</th>
+                <th className="text-left text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'keys.last_used')}</th>
+                <th className="text-center text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'keys.monthly_usage')}</th>
+                <th className="text-right text-xs font-medium text-gray-400 uppercase px-5 py-3">{t(lang, 'common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -215,7 +217,7 @@ export default function ApiKeysPage() {
                       <span
                         className="cursor-pointer hover:text-indigo-600 transition-colors"
                         onClick={() => { if (isOwner) { setEditingKeyId(k.id); setEditingName(k.name) } }}
-                        title={isOwner ? '点击编辑名称' : undefined}
+                        title={isOwner ? t(lang, 'keys.click_edit_name') : undefined}
                       >
                         {k.name}
                       </span>
@@ -227,7 +229,7 @@ export default function ApiKeysPage() {
                       <button
                         onClick={() => handleCopy(k.key_value)}
                         className="p-1 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded transition-colors"
-                        title="复制完整 Key"
+                        title={t(lang, 'keys.copy_full')}
                       >
                         {copied ? <Check size={14} /> : <Copy size={14} />}
                       </button>
@@ -240,7 +242,7 @@ export default function ApiKeysPage() {
                         onChange={e => updateMut.mutate({ keyId: k.id, data: { assigned_to: e.target.value } })}
                         className="px-2 py-1 border border-gray-200 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[140px]"
                       >
-                        <option value={k.created_by}>{usernameById(k.created_by)}（自己）</option>
+                        <option value={k.created_by}>{usernameById(k.created_by)}{t(lang, 'keys.self')}</option>
                         {users?.filter(u => u.enabled && u.id !== k.created_by).map(u => (
                           <option key={u.id} value={u.id}>{u.username}</option>
                         ))}
@@ -267,7 +269,7 @@ export default function ApiKeysPage() {
                     <div className="flex justify-end">
                       {isOwner && (
                         <button
-                          onClick={() => { if (confirm('删除此 Key？')) deleteMut.mutate(k.id) }}
+                          onClick={() => { if (confirm(t(lang, 'keys.delete_confirm'))) deleteMut.mutate(k.id) }}
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 size={16} />
